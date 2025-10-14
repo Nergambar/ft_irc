@@ -1,21 +1,72 @@
-socket, close, setsockopt, getsockname,
-getprotobyname, gethostbyname, getaddrinfo,
-freeaddrinfo, bind, connect, listen, accept, htons,
-htonl, ntohs, ntohl, inet_addr, inet_ntoa, send,
-recv, signal, sigaction, lseek, fstat, fcntl, poll
-(or equivalent)
+FUNZIONI PERMESSE:
+    socket, close, setsockopt, getsockname,
+    getprotobyname, gethostbyname, getaddrinfo,
+    freeaddrinfo, bind, connect, listen, accept, htons,
+    htonl, ntohs, ntohl, inet_addr, inet_ntoa, send,
+    recv, signal, sigaction, lseek, fstat, fcntl, poll
+    (or equivalent)
 
-socket
-close
-setsockopt
-getsockname,
-getprotobyname
-gethostbyname
-getaddrinfo
-freeaddrinfo
-bind
-connect
-listen
+COSA FANNO:
+
+socket : ritorna un fd pronto a comunicare tramite IPv4
+            e le regole di connessione di TCP
+        TRE ARGOMENTI: 
+        - domain : indirizzi IP (IPv4)
+        - type : 
+            + SOCK_STREAM: TCP (transmission control protocol), connessione affidabile, stream basato sulla connessione
+            + SOCK_DGRAM: UDP (User Datagram Protocol), senza connessione, veloce ma inaffidabile
+        - protocol : quale protocollo della famiglia/tipo, spesso settato a 0 per il protocollo default del dominio specificato e tipo
+
+close : Si assicura che tutti i dati rimanenti siano mandati e ricevuti prima di chiudere la connessione
+        Rilascia l'fd (lo rende invalido per ricevere/mandare dati)
+        chiude e disconnette l'endpoint della comunicazione.
+        il Sistema Operativo (OS) libera memoria e le risorse interne allocate per il socket.
+
+setsockopt : configura comportamenti/opzioni per un socket dato
+            CINQUE ARGOMENTI:
+            - socket : fd del socket da modificare
+            - level : specifica CHI definisca l'opzione da cambiare:
+                + SOL_SOCKET : (la piu comune) impostazione di socket-level generale
+                + IPPROTO_TCP : applica al protocollo TCP
+                + IPPROTO_IP : applica al protocollo IP
+            - option_name : impostazione (specifica) da cambiare
+            - option\_value : puntatore al nuovo valore che vuoi dare all'opzione
+
+getsockname : ottiene l'indirizzo locale e il numero del port assegnato al socket
+
+getprotobyname : cerca il protocollo network per nome, ed ottiene l'identificatore di protocollo numerico
+                UN ARGOMENTO:
+                    -name: nome del protocollo da trovare
+                ritorna un puntatore alla struct protoent
+gethostbyname : cerca il protocollo network per host name
+                UN ARGOMENTO:
+                    - hostname : puntatore a stringa che contiene il nome dell'host (e.g "gemini.google.com")
+                
+getaddrinfo :   "Successore" di gethostbyname, modo piu robusto per cercare indirizzi network
+                DUE ARGOMENTI:
+                    - name: hostname
+                    - serv_name: (opzionale) nome del servizio (come http) o port (tipo 80)
+                gestisce IPv4 e IPv6, include informazioni riguardo il Port/servizio, 
+                usa memoria allocata dinamicamente e ritorna una struttura "pronta all'uso" (struct addrinfo)
+
+freeaddrinfo :  usato per pulizia della memoria occupata da getaddrinfo()
+                UN ARGOMENTO:
+                    -ptr : puntatore alla cima della struttura addrinfo
+
+bind :  assegna un indirizzo network locale e un port ad un socket che hai appena creato
+        TRE ARGOMENTI:
+            -socket : l'fd del socket a cui vuoi assegnare un'indirizzo
+            -address : puntatore alla struttura sockaddr(_in o sockaddr_in6) che contiene l'IP locale desiderato e port
+            -address_len
+
+connect : usato per stabilire una connessione attiva ad un indirizzo remoto e port
+          TRE ARGOMENTI:
+            -socket
+            -address
+            -address_len
+
+listen **usato principalmente da server**: 
+
 accept
 htons
 htonl
