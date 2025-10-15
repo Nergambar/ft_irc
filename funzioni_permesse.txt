@@ -112,21 +112,38 @@ inet_addr : converte indirizzi IP ("human-readable") in un numero binario da 32b
             UN ARGOMENTO:
                 - cp: puntatore const ad una string NULL terminated che contiene l'indirizzo IPv4 nell'annotazione standard dotted-decimal notation (e.g "192.168.1.1")
 
-inet_ntoa
+inet_ntoa : converte un indirizzo 32-bit IPv4 nel proprio corrispondente dotted-decimal
+	UN ARGOMENTO:
+		- in : struct in_addr : struttura che contiene un indirizzo da 32bit IPv4 che DEVE essere in NETWORK BYTE ORDER
+	
+	non e' thread-safe
 
-send
+send : usato per trasmettere dati in un socket connesso.
+	QUATTRO ARGOMENTI:
+	- socket : int : FD del socket connesso
+	- buffer : const void * : puntatore al blocco di dati da mandare
+	- len : size_t : byte da mandare dal buffer
+	- flags : int : controlli OPZIONALI per come mandare i dati
 
-recv
 
-signal
+recv : legge i dati in entrata da un socket connesso.
+	QUATTRO ARGOMENTI:
+	- socket : int : fd del socket connesso
+	- buffer : void *: puntatore a memoria dove i dati in arrivo sono salvati
+	- len : size_t : numero massimo di byte che il buffer puo' tenere
+	- flags : int : controlli OPZIONALI per come i dati sono ricevuti
 
-sigaction
+fstat : usato per ottenere informazioni (metadata) dettagliate associate al fd.
+	DUE ARGOMENTI:
+	- fildes : int : fd del file/socket di cui si vogliono informazioni
+	- buf : struct stat* : un puntatore ad un struct stat cui funzione riempira' con i dati ottenuti.
 
-lseek
-
-fstat
-
-fcntl
+fcntl : usato per manipolare o controllare un fd aperto.
+	TRE ARGOMENTI:
+	- fd : int
+	- cmd : int : operazione da eseguire
+	- ... : varia : terzo argomento opzionale cui funzione cambia in base all'operazione (cmd)
+	
 
 
 
