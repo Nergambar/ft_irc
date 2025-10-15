@@ -8,6 +8,20 @@ FUNZIONI PERMESSE:
 
 COSA FANNO:
 
+SELECT : alternativa di poll() **si ritrova nell'esame 06** : offre un modo di motirorare socket multipli ed altri fd in simultanea per vedere se sono pronti per input/output/gestione dell'errore
+	CINQUE ARGOMENTI:
+	- nfds : int : il numero piu grande degli FD (+1) in uso
+	- readfds : fd_set *: serie di fd per controllare dati da *leggere*
+	- writefds : fd_set *: serie di fd per controllare se son pronti o meno per *essere scritti*
+	- exceptfds : fd_set *: set di FD per controllare eccezioni in entrata (dati di errori/out-of-band)
+	- timeout : struct timeval *: struttura che specifica quanto aspettare prima di fare return (puo' essere impostato a per sempre, immediatamente, o un tempo specifico)
+	
+	DIFFERENZE CON poll():
+	+ usa tre bitmasks diverse, mentre poll usa un array singolo di struct pollfd
+	+ fd_set ha un limite fisso, definito dal sistema, di fd che puoi monitorare (alla volta?)
+	+ la funzione deve ricostruire e analizzare la bitmask dopo ogni chiamata, mentre pool() controlla solo gli elementi dell'array che gli fornisci te.
+	+ accessibile quasi ovunque, mentre pool() e' piu' nuova disponibile su unix/linux
+
 socket : ritorna un fd pronto a comunicare tramite IPv4
             e le regole di connessione di TCP
         TRE ARGOMENTI: 
@@ -114,4 +128,6 @@ fstat
 
 fcntl
 
-poll (or equivalent)
+
+
+
