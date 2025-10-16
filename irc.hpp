@@ -12,6 +12,22 @@
 #include <netinet/in.h> // sockaddr_in
 #include <fcntl.h>      // fcntl
 
+class User
+{
+    private:
+        std::string username;
+        std::string nickname;
+        std::string hostName;
+        bool        isOperator;
+        std::map<std::string, bool> channelPerm;
+        // int   maxChannel;
+
+    public:
+        std::string getUsername() const;
+        std::string getNickname() const;
+
+        void    makeOperator(User &user, std::string channel);
+};
 
 int     create_serv_pocket(int port);
 int     addNickname(std::map<int,std::string>&cp, const std::string &n);

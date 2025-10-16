@@ -5,21 +5,18 @@ using namespace std;
 int addNickname(map<int,string>&cp, const string &n)
 {
     int i;
-    int k;
     if (cp.empty())
         i = 0;
-    else
+    int k;
+    for (map<int, string>::iterator it = cp.begin(); it != cp.end(); ++it)
     {
-        for (map<int, string>::iterator it = cp.begin(); it != cp.end(); ++it)
+        if (n == it->second)
         {
-            if (n == it->second)
-            {
-                return (-999);
-            }
+            return (-999);
         }
-        k = cp.rbegin()->first + 1;
-        cp[k] = n;
     }
+    k = cp.rbegin()->first + 1;
+    cp[k] = n;
     return (k);
 }
 
@@ -68,7 +65,9 @@ int main(){
     {   
         map<int,string>::iterator it;
         for(it = nickname.begin(); it!=nickname.end(); ++it)
-        {cout << it->first << "=>" << it->second << endl;}
+        {
+            cout << it->first << "=> nickname:" << it->second << endl;
+        }
     }
     map<int, string>::iterator it = nickname.end();
     it--;
