@@ -8,6 +8,7 @@ OBJ 	= $(SRC:.cpp=.o)
 
 
 all: $(NAME)
+	@echo compiling...
 
 $(NAME): $(OBJ)
 	$(CXX) $(CXXFLAGS) -o $(NAME) $(OBJ)
@@ -17,10 +18,14 @@ $(NAME): $(OBJ)
 
 clean:
 	rm -f $(OBJ)
+	@echo cleaning $(OBJ)...
 
 fclean: clean
 	rm -f $(NAME)
+	@echo removing $(NAME)
 
 re: fclean all
 
 .PHONY: all clean fclean re
+
+.SILENT:
