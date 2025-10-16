@@ -1,27 +1,32 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/15 17:29:48 by scarlucc          #+#    #+#             */
-/*   Updated: 2025/10/16 09:32:12 by negambar         ###   ########.fr       */
+/*   Updated: 2025/10/16 15:53:52 by scarlucc         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
 #include "irc.hpp"
 
 int create_serv_pocket(int port)
 {
-    // 1️⃣ Creazione del socket
+    // 1) Creazione del socket
+	/*AF_INET == ipv4
+	SOCK_STREAM == TCP
+	0 == protocollo default del dominio specificato e tipo*/
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0) {
         perror("socket");
         return -1;
     }
     
-    // 2️⃣ Imposta opzione SO_REUSEADDR (evita errori "address already in use")
+    // 2) Imposta opzione SO_REUSEADDR (evita errori "address already in use")
+	/*server_fd == fd del socket
+	*/
     int opt = 1;
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
         perror("setsockopt");
