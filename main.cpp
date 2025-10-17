@@ -6,7 +6,7 @@
 /*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/15 17:29:48 by scarlucc          #+#    #+#             */
-/*   Updated: 2025/10/16 15:53:52 by scarlucc         ###   ########.fr       */
+/*   Updated: 2025/10/17 12:53:07 by scarlucc         ###   ########.fr       */
 /*                                                                            */
 /******************************************************************************/
 
@@ -25,8 +25,11 @@ int create_serv_pocket(int port)
     }
     
     // 2) Imposta opzione SO_REUSEADDR (evita errori "address already in use")
-	/*server_fd == fd del socket
-	*/
+	/*server_fd == fd del socket da modificare
+	SOL_SOCKET == level, specifica CHI definisca l'opzione da cambiare (impostazione di socket-level generale)
+	SO_REUSEADDR == option_name : impostazione (specifica) da cambiare
+	opt == option_value
+	sizeof() == */
     int opt = 1;
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
         perror("setsockopt");
@@ -34,6 +37,10 @@ int create_serv_pocket(int port)
         return -1;
     }
 
+	/*La struttura SOCKADDR_IN specifica un indirizzo di trasporto e una porta per la famiglia di indirizzi AF_INET
+	sin_family == Famiglia di indirizzi per l'indirizzo di trasporto. Questo membro deve essere sempre impostato su AF_INET
+	sin_addr == Struttura IN_ADDR che contiene un indirizzo di trasporto IPv4
+	sin_port == ??*/
     struct sockaddr_in addr;
     std::memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
