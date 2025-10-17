@@ -11,6 +11,9 @@
 #include <sys/socket.h> // socket, bind, listen, accept
 #include <netinet/in.h> // sockaddr_in
 #include <fcntl.h>      // fcntl
+#include <vector>       // vector
+#include <algorithm>    // vector find
+#include <sstream>      //stringstream
 
 class User
 {
@@ -20,6 +23,7 @@ class User
         std::string hostName;
         bool        isOperator;
         std::map<std::string, bool> channelPerm;
+        std::vector<std::string> channelAll;
         // int   maxChannel;
 
     public:
@@ -27,6 +31,7 @@ class User
         std::string getNickname() const;
 
         void    makeOperator(User &user, std::string channel);
+        void    joinChannel(User &u, std::string channel);
 };
 
 int     create_serv_pocket(int port);
