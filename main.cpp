@@ -1,64 +1,77 @@
-/******************************************************************************/
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   main.cpp                                           :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/15 17:29:48 by scarlucc          #+#    #+#             */
-/*   Updated: 2025/10/17 12:53:07 by scarlucc         ###   ########.fr       */
-/*                                                                            */
-/******************************************************************************/
+// main.cpp
+#include <iostream>
+#include <string>
+#include <vector>
+#include <map>
+#include <algorithm>
+#include <cstring>
+#include <cerrno>
 
-#include "irc.hpp"
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
-int create_serv_pocket(int port)
-{
-    // 1) Creazione del socket
-	/*AF_INET == ipv4
-	SOCK_STREAM == TCP
-	0 == protocollo default del dominio specificato e tipo*/
-    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_fd < 0) {
-        perror("socket");
-        return -1;
-    }
-    
-    // 2) Imposta opzione SO_REUSEADDR (evita errori "address already in use")
-	/*server_fd == fd del socket da modificare
-	SOL_SOCKET == level, specifica CHI definisca l'opzione da cambiare (impostazione di socket-level generale)
-	SO_REUSEADDR == option_name : impostazione (specifica) da cambiare
-	opt == option_value
-	sizeof() == */
+#include <unistd.h>
+#include <fcntl.h>
+#include <poll.h>
+/* 
+ * fcntl(fd, F_GETFL, 0) legge i flag presenti in fd
+ * fcntl(fd, F_SETFL, flags | O_NONBLOCK) aggiunge O_NONBLOCK ai flag presenti
+ * 
+*/
+int set_nonblocking(int fd) {
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags < 0) return -1;
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) return -1;
+    return 0;
+}
+/* 
+ * aaa
+ *bbb
+ *ccc
+*/
+int make_server_socket(int port) {
+    int srv = socket(AF_INET, SOCK_STREAM, 0);
+    if (srv < 0) { perror("socket"); return -1; }
+
     int opt = 1;
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+    if (setsockopt(srv, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
         perror("setsockopt");
-        close(server_fd);
+        close(srv);
         return -1;
     }
 
-	/*La struttura SOCKADDR_IN specifica un indirizzo di trasporto e una porta per la famiglia di indirizzi AF_INET
-	sin_family == Famiglia di indirizzi per l'indirizzo di trasporto. Questo membro deve essere sempre impostato su AF_INET
-	sin_addr == Struttura IN_ADDR che contiene un indirizzo di trasporto IPv4
-	sin_port == ??*/
     struct sockaddr_in addr;
     std::memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;  // ascolta su tutte le interfacce (127.0.0.1, ecc.)
-    addr.sin_port = htons(port);        // converte in "network byte order"
-    
-    // 3️⃣ Associazione del socket alla porta
-    if (bind(server_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-        perror("bind"); close(server_fd);
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons(port);
+
+    if (bind(srv, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+        perror("bind");
+        close(srv);
         return -1;
     }
-    
-    // 4️⃣ Metti il socket in ascolto
-    if (listen(server_fd, 10) < 0) {
-        perror("listen"); close(server_fd);
+
+	/* 
+	* server in ascolto 
+	* listen() con 16 di backlog come valore arbitrario temporaneo, dopo decidiamo quanto fare
+	*/
+    if (listen(srv, 16) < 0) {
+        perror("listen");
+        close(srv);
         return -1;
     }
-    return server_fd;
+
+	//setta server come non bloccante
+    if (set_nonblocking(srv) < 0) {
+        perror("set_nonblocking");
+        close(srv);
+        return -1;
+    }
+
+    return srv;
 }
 
 int main(int argc, char **argv) {
@@ -66,32 +79,180 @@ int main(int argc, char **argv) {
         std::cerr << "Usage: ./ircserv <port> <password>\n";
         return 1;
     }
-
     int port = std::atoi(argv[1]);
     std::string password = argv[2];
-    
-    int server_fd = create_serv_pocket(port);
-    if (server_fd < 0)
-        return (std::cout << "error with pocket creation", 1);
 
-    std::cout << "IRC Server listening on port " << port << "..." << std::endl;
+    int server_fd = make_server_socket(port);
+    if (server_fd < 0) return 1;
 
-    // 5️⃣ Ciclo principale: accetta connessioni
+    std::cout << "Server listening on port " << port << std::endl;
+
+    // vettore di pollfd: index 0 -> server_fd, gli altri -> clients
+    std::vector<struct pollfd> pfds;
+    struct pollfd p;
+    p.fd = server_fd;
+    p.events = POLLIN; // vogliamo sapere nuove connessioni
+    p.revents = 0;
+    pfds.push_back(p);
+
+    // buffers per ogni client (in e out)
+    std::map<int, std::string> inbuf;
+    std::map<int, std::string> outbuf;
+
     while (true) {
-        struct sockaddr_in client_addr;
-        socklen_t client_len = sizeof(client_addr);
+        int timeout = -1; // wait indefinitely
+        int rv = poll(&pfds[0], pfds.size(), timeout);
+        if (rv < 0) {
+            if (errno == EINTR) continue; // interrotto da signal, riprova
+            perror("poll");
+            break;
+        }
+        if (rv == 0) continue; // timeout (non usato qui)
 
-        int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_len);
-        if (client_fd < 0) {
-            perror("accept");
-            continue;
+        // ---- 1) gestione nuove connessioni: pfds[0] è il listening socket ----
+        if (pfds.size() > 0 && (pfds[0].revents & POLLIN)) {
+            // Accept in loop perché server_fd è non bloccante: possono esserci più connessioni pronte
+            while (true) {
+                struct sockaddr_in cli_addr;
+                socklen_t cli_len = sizeof(cli_addr);
+                int client_fd = accept(server_fd, (struct sockaddr*)&cli_addr, &cli_len);
+                if (client_fd < 0) {
+                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                        // nessuna altra connessione pronta
+                        break;
+                    } else {
+                        perror("accept");
+                        break;
+                    }
+                }
+
+                // rendi non bloccante il client socket
+                if (set_nonblocking(client_fd) < 0) {
+                    perror("set_nonblocking(client)");
+                    close(client_fd);
+                    continue;
+                }
+
+                // aggiungi al vettore pfds
+                struct pollfd np;
+                np.fd = client_fd;
+                np.events = POLLIN; // inizialmente ci interessa leggere
+                np.revents = 0;
+                pfds.push_back(np);
+
+                // inizializza i buffer
+                inbuf[client_fd] = "";
+                outbuf[client_fd] = "";
+
+                char ipbuf[INET_ADDRSTRLEN];
+                inet_ntop(AF_INET, &(cli_addr.sin_addr), ipbuf, INET_ADDRSTRLEN);
+                std::cout << "Accepted client fd=" << client_fd
+                          << " ip=" << ipbuf
+                          << " port=" << ntohs(cli_addr.sin_port) << std::endl;
+            }
+            // pulisci revents del server_fd
+            pfds[0].revents = 0;
         }
 
-        std::cout << "New client connected! FD = " << client_fd << std::endl;
-        // Chiudi subito la connessione per ora (solo test)
-        close(client_fd);
-    }
+        // ---- 2) gestione dei client esistenti ----
+        for (size_t i = 1; i < pfds.size(); ++i) {
+            int fd = pfds[i].fd;
+            short rev = pfds[i].revents;
 
-    close(server_fd);
+            if (rev == 0) continue; // niente accaduto per questo fd
+
+            // error or hangup
+            if (rev & (POLLERR | POLLHUP | POLLNVAL)) {
+                std::cout << "Client fd=" << fd << " closed or error (revents=" << rev << ")\n";
+                close(fd);
+                inbuf.erase(fd);
+                outbuf.erase(fd);
+                pfds.erase(pfds.begin() + i);
+                --i;
+                continue;
+            }
+
+            // dati disponibili in lettura
+            if (rev & POLLIN) {
+                bool closed = false;
+                while (true) {
+                    char buf[4096];
+                    ssize_t n = recv(fd, buf, sizeof(buf), 0);
+                    if (n > 0) {
+                        inbuf[fd].append(buf, buf + n);
+                        // prova a processare linee terminate da '\n'
+                        size_t pos;
+                        while ((pos = inbuf[fd].find('\n')) != std::string::npos) {
+                            std::string line = inbuf[fd].substr(0, pos + 1);
+                            inbuf[fd].erase(0, pos + 1);
+                            // qui esegui il parsing comando IRC; per ora facciamo echo
+                            std::string reply = "Server echo: " + line;
+                            outbuf[fd].append(reply);
+                            // segna che vogliamo scrivere sul socket
+                            pfds[i].events |= POLLOUT;
+                        }
+                    } else if (n == 0) {
+                        // connessione chiusa dal peer
+                        std::cout << "Client fd=" << fd << " disconnected (recv==0)\n";
+                        closed = true;
+                        break;
+                    } else {
+                        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                            // nessun altro dato da leggere ora
+                            break;
+                        } else {
+                            perror("recv");
+                            closed = true;
+                            break;
+                        }
+                    }
+                } // end while recv loop
+
+                if (closed) {
+                    close(fd);
+                    inbuf.erase(fd);
+                    outbuf.erase(fd);
+                    pfds.erase(pfds.begin() + i);
+                    --i;
+                    continue;
+                }
+            } // end POLLIN
+
+            // socket pronto a scrivere
+            if (rev & POLLOUT) {
+                std::string &buf = outbuf[fd];
+                while (!buf.empty()) {
+                    ssize_t n = send(fd, buf.c_str(), buf.size(), 0);
+                    if (n > 0) {
+                        buf.erase(0, n);
+                    } else {
+                        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                            // non possiamo inviare ora, riproviamo più tardi
+                            break;
+                        } else {
+                            perror("send");
+                            // chiudi il client su errore
+                            close(fd);
+                            inbuf.erase(fd);
+                            outbuf.erase(fd);
+                            pfds.erase(pfds.begin() + i);
+                            --i;
+                            break;
+                        }
+                    }
+                }
+                // se non abbiamo più dati da inviare, togliamo POLLOUT
+                if (pfds.size() > i && outbuf.find(fd) != outbuf.end() && outbuf[fd].empty()) {
+                    pfds[i].events &= ~POLLOUT;
+                }
+            } // end POLLOUT
+
+            // pulisci revents per la prossima iterazione
+            if (pfds.size() > i) pfds[i].revents = 0;
+        } // end for clients
+    } // end while
+
+    // chiusura pulita
+    for (size_t i = 0; i < pfds.size(); ++i) close(pfds[i].fd);
     return 0;
 }
