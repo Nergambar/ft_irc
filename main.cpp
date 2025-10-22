@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstring>
 #include <cerrno>
+#include <stdio.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -110,6 +111,7 @@ int main(int argc, char **argv) {
         if (rv == 0) continue; // timeout (non usato qui)
 
         // ---- 1) gestione nuove connessioni: pfds[0] è il listening socket ----
+		//controlla se ci sono nuove connessioni al server
         if (pfds.size() > 0 && (pfds[0].revents & POLLIN)) {
             // Accept in loop perché server_fd è non bloccante: possono esserci più connessioni pronte
             while (true) {
@@ -144,6 +146,9 @@ int main(int argc, char **argv) {
                 inbuf[client_fd] = "";
                 outbuf[client_fd] = "";
 
+				/*The <netinet/in.h> header shall define the following macro to help applications declare buffers of the proper size to store IPv4 addresses in string form:
+				INET_ADDRSTRLEN
+				16. Length of the string form for IP.*/
                 char ipbuf[INET_ADDRSTRLEN];
                 inet_ntop(AF_INET, &(cli_addr.sin_addr), ipbuf, INET_ADDRSTRLEN);
                 std::cout << "Accepted client fd=" << client_fd
