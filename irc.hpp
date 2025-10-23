@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:41 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/22 15:56:40 by negambar         ###   ########.fr       */
+/*   Updated: 2025/10/23 13:21:08 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,7 +38,6 @@ class User
         std::string hostName;
         bool        isOperator;
         std::map<std::string, bool> channelPerm;
-        // std::vector<std::string> channelAll;
         Server  *serv;
         std::vector<std::string> messages;
         int   maxChannel; // has to be initialised to 9
