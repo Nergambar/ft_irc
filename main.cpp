@@ -146,9 +146,10 @@ int main(int argc, char **argv) {
                 inbuf[client_fd] = "";
                 outbuf[client_fd] = "";
 
-				/*The <netinet/in.h> header shall define the following macro to help applications declare buffers of the proper size to store IPv4 addresses in string form:
-				INET_ADDRSTRLEN
-				16. Length of the string form for IP.*/
+				/*converto indirizzo IPv4 in stringa per stamparlo
+					The <netinet/in.h> header shall define the following macro to help applications declare buffers of the proper size to store IPv4 addresses in string form:
+						INET_ADDRSTRLEN
+						16. Length of the string form for IP.*/
                 char ipbuf[INET_ADDRSTRLEN];
                 inet_ntop(AF_INET, &(cli_addr.sin_addr), ipbuf, INET_ADDRSTRLEN);
                 std::cout << "Accepted client fd=" << client_fd
