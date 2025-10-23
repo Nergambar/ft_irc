@@ -7,6 +7,8 @@
 #include <cstring>
 #include <cerrno>
 #include <stdio.h>
+#include <sstream>
+#include <cctype>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -27,11 +29,66 @@ int set_nonblocking(int fd) {
     if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) return -1;
     return 0;
 }
-/* 
- * aaa
- *bbb
- *ccc
-*/
+
+
+bool handle_command(int fd, const std::string &line,
+                    std::map<int,std::string> &outbuf,
+                    std::map<int,std::string> &client,
+                    std::string       &server_password,
+                    std::map<int, bool>       &authenticated,
+                    std::vector<struct pollfd> &pfds)
+{
+    if (line.empty() || line[0] != '/')
+        return (false);
+(void)authenticated;
+    std::istringstream iss(line);
+    std::string cmd;
+    iss >> cmd;
+
+    if (cmd == "/nick")
+    {
+        std::string newNick;
+        iss >> newNick;
+        if (newNick.empty())
+            outbuf[fd].append("Usage: /nick <name>\n");
+        else{
+            std::string old = client[fd];
+            client[fd] = newNick;
+            std::string msg = old + " is now " + newNick + "\r\n";
+            for (size_t k = 1; k < pfds.size(); ++k){
+                if (pfds[k].fd != fd){
+                    outbuf[pfds[k].fd].append(msg);
+                    pfds[k].events |= POLLOUT;
+                }
+            }
+            outbuf[fd].append("You are now "+ newNick + "\r\n");
+        }
+        return (true);
+    }
+    else if (cmd == "/password" || cmd == "/pw")
+    {
+        std::string newpw;
+        iss >> newpw;
+        if (newpw.empty()) {
+            outbuf[fd].append("Usage: /password <newpassword>  (use non-empty value to set)\r\n");
+        } else {
+            server_password = newpw;
+            outbuf[fd].append("Server password changed.\r\n");
+            // Notify other clients (optional)
+            std::string notice = "Server password has been changed by " + client[fd] + ".\r\n";
+            for (size_t k = 1; k < pfds.size(); ++k) {
+                if (pfds[k].fd != fd) {
+                    outbuf[pfds[k].fd].append(notice);
+                    pfds[k].events |= POLLOUT;
+                }
+            }
+        }
+        return (true);
+    }
+    outbuf[fd].append(std::string("Unknown command: ") + cmd + "\r\n");
+    return true;
+}
+
 int make_server_socket(int port) {
     int srv = socket(AF_INET, SOCK_STREAM, 0);
     if (srv < 0) { perror("socket"); return -1; }
@@ -55,17 +112,12 @@ int make_server_socket(int port) {
         return -1;
     }
 
-	/* 
-	* server in ascolto 
-	* listen() con 16 di backlog come valore arbitrario temporaneo, dopo decidiamo quanto fare
-	*/
     if (listen(srv, 16) < 0) {
         perror("listen");
         close(srv);
         return -1;
     }
 
-	//setta server come non bloccante
     if (set_nonblocking(srv) < 0) {
         perror("set_nonblocking");
         close(srv);
@@ -75,110 +127,144 @@ int make_server_socket(int port) {
     return srv;
 }
 
+// --- Main Server Logic ---
+
 int main(int argc, char **argv) {
     if (argc != 3) {
-        std::cerr << "Usage: ./ircserv <port> <password>\n";
+        std::cerr << "Usage: ./ircserv <port> [password]\n";
         return 1;
     }
     int port = std::atoi(argv[1]);
-    std::string password = argv[2];
-
     int server_fd = make_server_socket(port);
     if (server_fd < 0) return 1;
+    
+    std::string password = argv[2];
 
-    std::cout << "Server listening on port " << port << std::endl;
-
-    // vettore di pollfd: index 0 -> server_fd, gli altri -> clients
+    std::cout << "Chat Server listening on port " << port << std::endl;
+    
+    // A map to hold messages to be broadcasted to all other clients
+    std::map<int, std::string> broadcast_outbuf;
+    
+    // Vector of pollfd: index 0 -> server_fd, the others -> clients
     std::vector<struct pollfd> pfds;
     struct pollfd p;
     p.fd = server_fd;
-    p.events = POLLIN; // vogliamo sapere nuove connessioni
+    p.events = POLLIN; // Wait for new connections
     p.revents = 0;
     pfds.push_back(p);
 
-    // buffers per ogni client (in e out)
+    // Buffers for each client (in and out)
     std::map<int, std::string> inbuf;
     std::map<int, std::string> outbuf;
-
+    std::map<int, std::string> client_name; // Simple map to store client 'name' (fd in this case)
+    std::map<int, bool> authenticated;
+    
     while (true) {
-        int timeout = -1; // wait indefinitely
+        int timeout = -1; // Wait indefinitely
         int rv = poll(&pfds[0], pfds.size(), timeout);
         if (rv < 0) {
-            if (errno == EINTR) continue; // interrotto da signal, riprova
+            if (errno == EINTR) continue;
             perror("poll");
             break;
         }
-        if (rv == 0) continue; // timeout (non usato qui)
+        if (rv == 0) continue;
 
-        // ---- 1) gestione nuove connessioni: pfds[0] è il listening socket ----
-		//controlla se ci sono nuove connessioni al server
+        // ---- 1) Handle new connections: pfds[0] is the listening socket ----
         if (pfds.size() > 0 && (pfds[0].revents & POLLIN)) {
-            // Accept in loop perché server_fd è non bloccante: possono esserci più connessioni pronte
             while (true) {
                 struct sockaddr_in cli_addr;
                 socklen_t cli_len = sizeof(cli_addr);
                 int client_fd = accept(server_fd, (struct sockaddr*)&cli_addr, &cli_len);
                 if (client_fd < 0) {
                     if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                        // nessuna altra connessione pronta
-                        break;
+                        break; // No more connections ready
                     } else {
                         perror("accept");
                         break;
                     }
                 }
 
-                // rendi non bloccante il client socket
                 if (set_nonblocking(client_fd) < 0) {
                     perror("set_nonblocking(client)");
                     close(client_fd);
                     continue;
                 }
 
-                // aggiungi al vettore pfds
+                // Add to pfds vector
                 struct pollfd np;
                 np.fd = client_fd;
-                np.events = POLLIN; // inizialmente ci interessa leggere
+                np.events = POLLIN; // Initially interested in reading
                 np.revents = 0;
                 pfds.push_back(np);
 
-                // inizializza i buffer
+                // Initialize buffers and client info
                 inbuf[client_fd] = "";
                 outbuf[client_fd] = "";
-
-				/*converto indirizzo IPv4 in stringa per stamparlo
-					The <netinet/in.h> header shall define the following macro to help applications declare buffers of the proper size to store IPv4 addresses in string form:
-						INET_ADDRSTRLEN
-						16. Length of the string form for IP.*/
+                
                 char ipbuf[INET_ADDRSTRLEN];
                 inet_ntop(AF_INET, &(cli_addr.sin_addr), ipbuf, INET_ADDRSTRLEN);
+                
+                std::ostringstream name_os;
+                name_os << "user" << client_fd;
+                client_name[client_fd] = name_os.str();
+                
+                authenticated[client_fd] = password.empty();
+
                 std::cout << "Accepted client fd=" << client_fd
                           << " ip=" << ipbuf
                           << " port=" << ntohs(cli_addr.sin_port) << std::endl;
+                if (password.empty()) {
+                    std::string conn_msg = client_name[client_fd] + " joined the chat.\r\n";
+                    for (size_t k = 1; k < pfds.size(); ++k) {
+                        if (pfds[k].fd != client_fd) {
+                            outbuf[pfds[k].fd].append(conn_msg);
+                            pfds[k].events |= POLLOUT;
+                        }
+                    }
+                } else {
+                    outbuf[client_fd].append("Welcome. This server requires a password.\r\n");
+                   outbuf[client_fd].append("Enter password:\r\n");
+                    // Ensure the prompt is sent out
+                    for (size_t k = 1; k < pfds.size(); ++k) {
+                        if (pfds[k].fd == client_fd) {
+                            pfds[k].events |= POLLOUT;
+                        }
+                    }
+                }
             }
-            // pulisci revents del server_fd
             pfds[0].revents = 0;
         }
 
-        // ---- 2) gestione dei client esistenti ----
+        // ---- 2) Handle existing clients (reading/writing) ----
         for (size_t i = 1; i < pfds.size(); ++i) {
             int fd = pfds[i].fd;
             short rev = pfds[i].revents;
 
-            if (rev == 0) continue; // niente accaduto per questo fd
+            if (rev == 0) continue;
 
-            // error or hangup
+            // Error or hangup: Close client
             if (rev & (POLLERR | POLLHUP | POLLNVAL)) {
-                std::cout << "Client fd=" << fd << " closed or error (revents=" << rev << ")\n";
+                std::cout << "Client " << client_name[fd] << " fd=" << fd << " closed or error (revents=" << rev << ")\n";
+                
+                // Broadcast disconnection message
+                std::string disconn_msg = client_name[fd] + " left the chat.\r\n";
+                for (size_t k = 1; k < pfds.size(); ++k) {
+                    if (pfds[k].fd != fd) {
+                        outbuf[pfds[k].fd].append(disconn_msg);
+                        pfds[k].events |= POLLOUT;
+                    }
+                }
+
                 close(fd);
                 inbuf.erase(fd);
                 outbuf.erase(fd);
+                client_name.erase(fd);
                 pfds.erase(pfds.begin() + i);
                 --i;
                 continue;
             }
 
-            // dati disponibili in lettura
+            // Data available for reading (POLLIN)
             if (rev & POLLIN) {
                 bool closed = false;
                 while (true) {
@@ -186,26 +272,68 @@ int main(int argc, char **argv) {
                     ssize_t n = recv(fd, buf, sizeof(buf), 0);
                     if (n > 0) {
                         inbuf[fd].append(buf, buf + n);
-                        // prova a processare linee terminate da '\n'
+                        
+                        // Process line(s) terminated by '\n'
                         size_t pos;
                         while ((pos = inbuf[fd].find('\n')) != std::string::npos) {
                             std::string line = inbuf[fd].substr(0, pos + 1);
                             inbuf[fd].erase(0, pos + 1);
-                            // qui esegui il parsing comando IRC; per ora facciamo echo
-                            std::string reply = "Server echo: " + line;
-                            outbuf[fd].append(reply);
-                            // segna che vogliamo scrivere sul socket
-                            pfds[i].events |= POLLOUT;
+                            
+                            std::string trimmed = line;
+                            
+                            while (!trimmed.empty() && (trimmed[trimmed.size()-1] == '\n' || trimmed[trimmed.size()-1] == '\r'))
+                                trimmed.erase(trimmed.size()-1, 1);
+
+                            if (!authenticated[fd] && !password.empty()) {
+                                if (trimmed.empty()) {
+                                    outbuf[fd].append("Enter password:\r\n");
+                                } else if (trimmed == password) {
+                                    authenticated[fd] = true;
+                                    outbuf[fd].append("Password accepted. You are now authenticated.\r\n");
+                                    // Broadcast join now that this client is authenticated
+                                    std::string join_msg = client_name[fd] + " joined the chat.\r\n";
+                                    for (size_t k = 1; k < pfds.size(); ++k) {
+                                        if (pfds[k].fd != fd) {
+                                            outbuf[pfds[k].fd].append(join_msg);
+                                            pfds[k].events |= POLLOUT;
+                                        }
+                                    }
+                                } else {
+                                    outbuf[fd].append("Incorrect password. Try again:\r\n");
+                                }
+                                pfds[i].events |= POLLOUT;
+                            } else {
+                            if (handle_command(fd, trimmed, outbuf, client_name, password, authenticated, pfds)) {
+                                // A command was handled; make sure sender gets any response queued by handle_command
+                                pfds[i].events |= POLLOUT;
+                            } 
+                            else {
+                                // Remove trailing CR/LF
+                                while (!trimmed.empty() && (trimmed[trimmed.size()-1] == '\n' || trimmed[trimmed.size()-1] == '\r'))
+                                    trimmed.erase(trimmed.size()-1, 1);
+
+                                std::string message_to_broadcast = "[" + client_name[fd] + "]: " + trimmed + "\r\n";
+
+                                // Queue message to all *other* connected clients
+                                for (size_t k = 1; k < pfds.size(); ++k) {
+                                    if (pfds[k].fd != fd) {
+                                        outbuf[pfds[k].fd].append(message_to_broadcast);
+                                        pfds[k].events |= POLLOUT;
+                                    }
+                                }
+                                // Echo back to sender
+                                outbuf[fd].append("You said: " + trimmed + "\r\n");
+                                pfds[i].events |= POLLOUT;
+                            }
                         }
+                    }
                     } else if (n == 0) {
-                        // connessione chiusa dal peer
-                        std::cout << "Client fd=" << fd << " disconnected (recv==0)\n";
+                        std::cout << "Client " << client_name[fd] << " fd=" << fd << " disconnected (recv==0)\n";
                         closed = true;
                         break;
                     } else {
                         if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                            // nessun altro dato da leggere ora
-                            break;
+                            break; // No more data to read now
                         } else {
                             perror("recv");
                             closed = true;
@@ -215,17 +343,29 @@ int main(int argc, char **argv) {
                 } // end while recv loop
 
                 if (closed) {
+                    // Close client: Cleanup done in the error/hangup block above
+                    // The client will be cleaned up in the loop iteration's POLLERR/POLLHUP check 
+                    // or we can put the cleanup logic here to be immediate. Let's do it here for immediacy.
+                    std::string disconn_msg = client_name[fd] + " left the chat.\r\n";
+                    for (size_t k = 1; k < pfds.size(); ++k) {
+                        if (pfds[k].fd != fd) {
+                            outbuf[pfds[k].fd].append(disconn_msg);
+                            pfds[k].events |= POLLOUT;
+                        }
+                    }
+                    
                     close(fd);
                     inbuf.erase(fd);
                     outbuf.erase(fd);
+                    client_name.erase(fd);
                     pfds.erase(pfds.begin() + i);
                     --i;
                     continue;
                 }
             } // end POLLIN
 
-            // socket pronto a scrivere
-            if (rev & POLLOUT) {
+            // Socket ready for writing (POLLOUT)
+            if (pfds.size() > i && (rev & POLLOUT)) {
                 std::string &buf = outbuf[fd];
                 while (!buf.empty()) {
                     ssize_t n = send(fd, buf.c_str(), buf.size(), 0);
@@ -233,32 +373,39 @@ int main(int argc, char **argv) {
                         buf.erase(0, n);
                     } else {
                         if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                            // non possiamo inviare ora, riproviamo più tardi
-                            break;
+                            break; // Cannot send now, try again later
                         } else {
                             perror("send");
-                            // chiudi il client su errore
+                            // Close client on error
+                            std::string disconn_msg = client_name[fd] + " left the chat.\r\n";
+                            for (size_t k = 1; k < pfds.size(); ++k) {
+                                if (pfds[k].fd != fd) {
+                                    outbuf[pfds[k].fd].append(disconn_msg);
+                                    pfds[k].events |= POLLOUT;
+                                }
+                            }
                             close(fd);
                             inbuf.erase(fd);
                             outbuf.erase(fd);
+                            client_name.erase(fd);
                             pfds.erase(pfds.begin() + i);
                             --i;
                             break;
                         }
                     }
                 }
-                // se non abbiamo più dati da inviare, togliamo POLLOUT
+                // If the buffer is empty, stop asking to write
                 if (pfds.size() > i && outbuf.find(fd) != outbuf.end() && outbuf[fd].empty()) {
                     pfds[i].events &= ~POLLOUT;
                 }
             } // end POLLOUT
 
-            // pulisci revents per la prossima iterazione
+            // Clean up revents for the next iteration
             if (pfds.size() > i) pfds[i].revents = 0;
         } // end for clients
     } // end while
 
-    // chiusura pulita
+    // Clean shutdown
     for (size_t i = 0; i < pfds.size(); ++i) close(pfds[i].fd);
     return 0;
 }

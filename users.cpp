@@ -6,15 +6,14 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:28:17 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/22 16:16:49 by negambar         ###   ########.fr       */
+/*   Updated: 2025/10/23 13:37:11 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "irc.hpp"
 
-User::User()
+User::User() : username(""), nickname(""), hostName(""), isOperator(false), channelPerm(), serv(NULL), messages(), maxChannel(9)
 {
-    maxChannel = 9;
     messages.reserve(maxChannel);
 }
 
@@ -30,12 +29,9 @@ bool    User::isOper(std::string channel)
     }
 }
 
-User::User(std::string nickname) : channelPerm(), messages()
+User::User(std::string nickname) : username(""), nickname(nickname), hostName(""), isOperator(false), channelPerm(), serv(NULL), messages(), maxChannel(9)
 {
-    isOperator = false;
-    serv = NULL;
-    this->nickname = nickname;
-    maxChannel = 9;
+    messages.reserve(maxChannel);
 }
 
 void    User::setNickname(std::string n)

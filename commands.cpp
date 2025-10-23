@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 12:07:03 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/22 16:25:20 by negambar         ###   ########.fr       */
+/*   Updated: 2025/10/23 13:19:04 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,35 +18,46 @@
  */
 void    User::joinChannel(std::string channel)
 {
+    // 1. controlli base
+    // controlla che sia connesso ad una istanza server
     if (serv == NULL)
     {
         std::cerr << "Error: User is not connected to a server" << std::endl;
-        return ;
+        return;
     }
 
-    std::vector<Channel> &channels = serv->getChannel();
-
-    if (this->channelPerm.find(channel) != this->channelPerm.end())
+    
+    //controlla se e' gia nel canale
+    if (this->channelPerm.count(channel))
     {
         std::cerr << this->nickname << " is already in " << channel << std::endl;
         return;
     }
-
+    
+    
+    if (this->maxChannel <= 0)
+    {
+        std::cerr << "Max channel per user reached! (10)" << std::endl;
+        return ;
+    }
+    
+    std::vector<Channel> &channels = serv->getChannel();
     Channel *it = serv->findChannel(channel);
     bool created = false;
-    int lim = 0;
-
+    
     if (it == NULL)
     {
         std::cerr << "No channel available called " + channel << std::endl;
         std::cerr << this->nickname << " is creating " + channel + "..." << std::endl;
+        
         channels.push_back(Channel(channel));
         it = &channels.back();
         created = true;
         // new channel default limit expected to be valid
     }
-
+    
     // now it is guaranteed non-null
+    int lim = 0;
     lim = it->getLimit();
     if (lim <= 0)
     {
@@ -54,16 +65,7 @@ void    User::joinChannel(std::string channel)
         "the channel is full!" << std::endl;
         return;
     }
-
-    if (this->maxChannel == 0)
-    {   // user is already in 10 channels.
-        std::cerr << "Max channel per user reached! (10)" << std::endl;
-        // undo creation if we created the channel but couldn't join
-        if (created)
-            channels.pop_back();
-        return ;
-    }
-
+    this->channelPerm[channel] = created;
     if (created)
     {
         this->channelPerm[channel] = true;
@@ -72,7 +74,6 @@ void    User::joinChannel(std::string channel)
     }
     else
     {
-        this->channelPerm[channel] = false;
         std::cout << this->nickname << " joined " << channel << std::endl;
         it->setIntAsLimit(lim - 1);
         if (it->getLimit() == 0)
