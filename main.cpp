@@ -21,7 +21,7 @@
 /* 
  * fcntl(fd, F_GETFL, 0) legge i flag presenti in fd
  * fcntl(fd, F_SETFL, flags | O_NONBLOCK) aggiunge O_NONBLOCK ai flag presenti
- * 
+ * aaa
 */
 int set_nonblocking(int fd) {
     int flags = fcntl(fd, F_GETFL, 0);
