@@ -189,13 +189,13 @@ int main(int argc, char **argv) {
                     char buf[4096];
                     ssize_t n = recv(fd, buf, sizeof(buf), 0);
                     if (n > 0) {
-                        inbuf[fd].append(buf, buf + n);
+                        inbuf[fd].append(buf, buf + n);// che prototipo ha usato e perche'?
                         // prova a processare linee terminate da '\n'
                         size_t pos;
                         while ((pos = inbuf[fd].find('\n')) != std::string::npos) {
-                            std::string line = inbuf[fd].substr(0, pos + 1);
+                            std::string line = inbuf[fd].substr(0, pos + 1);// perche' pos + 1?
                             inbuf[fd].erase(0, pos + 1);
-                            // qui ci metteremo il parsing del comando; per ora facciamo echo
+                            // qui esegui il parsing comando IRC; per ora facciamo echo
                             std::string reply = "Server echo: " + line;
                             outbuf[fd].append(reply);
                             // segna che vogliamo scrivere sul socket
@@ -218,6 +218,7 @@ int main(int argc, char **argv) {
                     }
                 } // end while recv loop
 
+				//in caso di problemi, chiudi fd e pulisci i buffer
                 if (closed) {
                     close(fd);
                     inbuf.erase(fd);
