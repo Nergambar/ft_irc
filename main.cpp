@@ -30,6 +30,11 @@ int set_nonblocking(int fd) {
     return 0;
 }
 
+bool startswith(const std::string &s, const std::string &s2)
+{
+    if (s2.size() > s.size()) return false;
+    return s.compare(0, s2.size(), s2) == 0;
+}
 
 bool handle_command(int fd, const std::string &line,
                     std::map<int,std::string> &outbuf,
@@ -38,39 +43,59 @@ bool handle_command(int fd, const std::string &line,
                     std::map<int, bool>       &authenticated,
                     std::vector<struct pollfd> &pfds)
 {
-    if (line.empty() || line[0] != '/')
+    if (line.empty() || (line[0] != '/' && !startswith(line, "PASS") && !startswith(line, "NICK")))
         return (false);
 (void)authenticated;
     std::istringstream iss(line);
     std::string cmd;
     iss >> cmd;
 
-    if (cmd == "/nick")
+    if (cmd == "/nick" || cmd == "NICK")
     {
         std::string newNick;
+        std::ostringstream ss;
+        ss << fd;
         iss >> newNick;
-        if (newNick.empty())
-            outbuf[fd].append("Usage: /nick <name>\n");
-        else{
-            std::string old = client[fd];
-            client[fd] = newNick;
-            std::string msg = old + " is now " + newNick + "\r\n";
-            for (size_t k = 1; k < pfds.size(); ++k){
-                if (pfds[k].fd != fd){
-                    outbuf[pfds[k].fd].append(msg);
-                    pfds[k].events |= POLLOUT;
-                }
+        bool is_taken = false;
+        for (std::map<int, std::string>::iterator it = client.begin(); it != client.end(); ++it) {
+            if (it->first != fd && it->second == newNick) {
+                is_taken = true;
+                break;
             }
-            outbuf[fd].append("You are now "+ newNick + "\r\n");
         }
-        return (true);
+        if (is_taken) {
+            outbuf[fd].append("Nickname '"+ newNick + "' is already in use. Please choose another:\r\n");
+            return (true);
+        } else {
+            if (newNick.empty())
+                outbuf[fd].append("Usage: /nick <name> OR NICK <name>\n");
+            else{
+                std::string old;
+                if (client[fd].empty())
+                {
+                    old = "user" + ss.str();
+                }
+                else
+                    old = client[fd];
+                client[fd] = newNick;
+                std::string msg = old + " is now " + newNick + "\r\n";
+                for (size_t k = 1; k < pfds.size(); ++k){
+                    if (pfds[k].fd != fd){
+                        outbuf[pfds[k].fd].append(msg);
+                        pfds[k].events |= POLLOUT;
+                    }
+                }
+                outbuf[fd].append("You are now "+ newNick + "\r\n");
+            }
+            return (true);
+        }
     }
-    else if (cmd == "/password" || cmd == "/pw")
+    else if (cmd == "/pass" || cmd == "PASS")
     {
         std::string newpw;
         iss >> newpw;
         if (newpw.empty()) {
-            outbuf[fd].append("Usage: /password <newpassword>  (use non-empty value to set)\r\n");
+            outbuf[fd].append("Usage: /pass <newpassword>  (use non-empty value to set)\r\n");
         } else {
             server_password = newpw;
             outbuf[fd].append("Server password changed.\r\n");
@@ -213,24 +238,18 @@ int main(int argc, char **argv) {
                 std::cout << "Accepted client fd=" << client_fd
                           << " ip=" << ipbuf
                           << " port=" << ntohs(cli_addr.sin_port) << std::endl;
-                if (password.empty()) {
-                    std::string conn_msg = client_name[client_fd] + " joined the chat.\r\n";
-                    for (size_t k = 1; k < pfds.size(); ++k) {
-                        if (pfds[k].fd != client_fd) {
-                            outbuf[pfds[k].fd].append(conn_msg);
-                            pfds[k].events |= POLLOUT;
-                        }
-                    }
-                } else {
-                    outbuf[client_fd].append("Welcome. This server requires a password.\r\n");
-                   outbuf[client_fd].append("Enter password:\r\n");
-                    // Ensure the prompt is sent out
-                    for (size_t k = 1; k < pfds.size(); ++k) {
-                        if (pfds[k].fd == client_fd) {
-                            pfds[k].events |= POLLOUT;
-                        }
+                
+                outbuf[client_fd].append("Welcome. This server requires a password.\r\n");
+                outbuf[client_fd].append("Enter password:\r\n");
+                // Ensure the prompt is sent out
+                for (size_t k = 1; k < pfds.size(); ++k)
+                {
+                    if (pfds[k].fd == client_fd)
+                    {
+                        pfds[k].events |= POLLOUT;
                     }
                 }
+
             }
             pfds[0].revents = 0;
         }
@@ -290,43 +309,77 @@ int main(int argc, char **argv) {
                                 } else if (trimmed == password) {
                                     authenticated[fd] = true;
                                     outbuf[fd].append("Password accepted. You are now authenticated.\r\n");
+                                    outbuf[fd].append("Set your nickname:\r\n");
+                                    pfds[i].events |= POLLOUT;
                                     // Broadcast join now that this client is authenticated
-                                    std::string join_msg = client_name[fd] + " joined the chat.\r\n";
-                                    for (size_t k = 1; k < pfds.size(); ++k) {
-                                        if (pfds[k].fd != fd) {
-                                            outbuf[pfds[k].fd].append(join_msg);
-                                            pfds[k].events |= POLLOUT;
-                                        }
-                                    }
+                                    pfds[i].events |= POLLOUT;
                                 } else {
                                     outbuf[fd].append("Incorrect password. Try again:\r\n");
                                 }
                                 pfds[i].events |= POLLOUT;
-                            } else {
-                            if (handle_command(fd, trimmed, outbuf, client_name, password, authenticated, pfds)) {
-                                // A command was handled; make sure sender gets any response queued by handle_command
-                                pfds[i].events |= POLLOUT;
                             } 
-                            else {
-                                // Remove trailing CR/LF
-                                while (!trimmed.empty() && (trimmed[trimmed.size()-1] == '\n' || trimmed[trimmed.size()-1] == '\r'))
-                                    trimmed.erase(trimmed.size()-1, 1);
+                            else if (authenticated[fd] && client_name[fd].find("user") == 0) {
+                                // The client has authenticated (or didn't need a password)
+                                // and still has the default "userN" name.
+                                
+                                std::string newNick = trimmed;
+                                if (newNick.empty()) {
+                                    outbuf[fd].append("Nickname cannot be empty. Please choose your nickname:\r\n");
+                                } else {
+                                    // Simple check if the nickname is already taken (case-sensitive)
+                                    bool is_taken = false;
+                                    for (std::map<int, std::string>::iterator it = client_name.begin(); it != client_name.end(); ++it) {
+                                        if (it->first != fd && it->second == newNick) {
+                                            is_taken = true;
+                                            break;
+                                        }
+                                    }
 
-                                std::string message_to_broadcast = "[" + client_name[fd] + "]: " + trimmed + "\r\n";
-
-                                // Queue message to all *other* connected clients
-                                for (size_t k = 1; k < pfds.size(); ++k) {
-                                    if (pfds[k].fd != fd) {
-                                        outbuf[pfds[k].fd].append(message_to_broadcast);
-                                        pfds[k].events |= POLLOUT;
+                                    if (is_taken) {
+                                        outbuf[fd].append("Nickname '"+ newNick + "' is already in use. Please choose another:\r\n");
+                                    } else {
+                                        std::string oldNick = client_name[fd];
+                                        client_name[fd] = newNick;
+                                        outbuf[fd].append("You are now known as " + newNick + ".\r\n");
+                                        
+                                        // Broadcast join message now that the nickname is set
+                                        std::string join_msg = newNick + " joined the chat.\r\n";
+                                        for (size_t k = 1; k < pfds.size(); ++k) {
+                                            if (pfds[k].fd != fd) {
+                                                outbuf[pfds[k].fd].append(join_msg);
+                                                pfds[k].events |= POLLOUT;
+                                            }
+                                        }
                                     }
                                 }
-                                // Echo back to sender
-                                outbuf[fd].append("You said: " + trimmed + "\r\n");
                                 pfds[i].events |= POLLOUT;
+
+                            }
+                            else {
+                                if (handle_command(fd, trimmed, outbuf, client_name, password, authenticated, pfds)) {
+                                    // A command was handled; make sure sender gets any response queued by handle_command
+                                    pfds[i].events |= POLLOUT;
+                                } 
+                                else {
+                                    // Remove trailing CR/LF
+                                    while (!trimmed.empty() && (trimmed[trimmed.size()-1] == '\n' || trimmed[trimmed.size()-1] == '\r'))
+                                        trimmed.erase(trimmed.size()-1, 1);
+
+                                    std::string message_to_broadcast = "[" + client_name[fd] + "]: " + trimmed + "\r\n";
+
+                                    // Queue message to all *other* connected clients
+                                    for (size_t k = 1; k < pfds.size(); ++k) {
+                                        if (pfds[k].fd != fd) {
+                                            outbuf[pfds[k].fd].append(message_to_broadcast);
+                                            pfds[k].events |= POLLOUT;
+                                        }
+                                    }
+                                    // Echo back to sender
+                                    outbuf[fd].append("You said: " + trimmed + "\r\n");
+                                    pfds[i].events |= POLLOUT;
+                                }
                             }
                         }
-                    }
                     } else if (n == 0) {
                         std::cout << "Client " << client_name[fd] << " fd=" << fd << " disconnected (recv==0)\n";
                         closed = true;
