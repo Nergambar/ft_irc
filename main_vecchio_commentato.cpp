@@ -189,17 +189,17 @@ int main(int argc, char **argv) {
                     char buf[4096];
                     ssize_t n = recv(fd, buf, sizeof(buf), 0);
                     if (n > 0) {
-                        inbuf[fd].append(buf, buf + n);// che prototipo ha usato e perche'?
+                        inbuf[fd].append(buf, buf + n);// string& append(const char* first, const char* last); buf + n = puntatore dopo ultimo byte valido
                         // prova a processare linee terminate da '\n'
                         size_t pos;
                         while ((pos = inbuf[fd].find('\n')) != std::string::npos) {
-                            std::string line = inbuf[fd].substr(0, pos + 1);// perche' pos + 1?
+                            std::string line = inbuf[fd].substr(0, pos + 1);// pos + 1 per includere anche \n
                             inbuf[fd].erase(0, pos + 1);
                             // qui esegui il parsing comando IRC; per ora facciamo echo
                             std::string reply = "Server echo: " + line;
                             outbuf[fd].append(reply);
                             // segna che vogliamo scrivere sul socket
-                            pfds[i].events |= POLLOUT;
+                            pfds[i].events |= POLLOUT;//server deve inviare a client
                         }
                     } else if (n == 0) {
                         // connessione chiusa dal peer
