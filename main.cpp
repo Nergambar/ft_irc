@@ -40,12 +40,10 @@ bool handle_command(int fd, const std::string &line,
                     std::map<int,std::string> &outbuf,
                     std::map<int,std::string> &client,
                     std::string       &server_password,
-                    std::map<int, bool>       &authenticated,
                     std::vector<struct pollfd> &pfds)
 {
     if (line.empty() || (line[0] != '/' && !startswith(line, "PASS") && !startswith(line, "NICK")))
         return (false);
-(void)authenticated;
     std::istringstream iss(line);
     std::string cmd;
     iss >> cmd;
@@ -64,7 +62,7 @@ bool handle_command(int fd, const std::string &line,
             }
         }
         if (is_taken) {
-            outbuf[fd].append("Nickname '"+ newNick + "' is already in use. Please choose another:\r\n");
+            outbuf[fd].append("Nickname '"+ newNick + "' is already in use. Please choose another.\r\n");//ERR_NICKCOLLISION
             return (true);
         } else {
             if (newNick.empty())
@@ -96,7 +94,10 @@ bool handle_command(int fd, const std::string &line,
         iss >> newpw;
         if (newpw.empty()) {
             outbuf[fd].append("Usage: /pass <newpassword>  (use non-empty value to set)\r\n");
-        } else {
+        } else if (newpw == server_password) {
+			outbuf[fd].append("Can't change into the same password as before.\r\n");
+		}
+		else {
             server_password = newpw;
             outbuf[fd].append("Server password changed.\r\n");
             // Notify other clients (optional)
@@ -291,6 +292,10 @@ int main(int argc, char **argv) {
                     ssize_t n = recv(fd, buf, sizeof(buf), 0);
                     if (n > 0) {
                         inbuf[fd].append(buf, buf + n);
+
+						// 🔍 stampa quello che è arrivato
+						std::string received(buf, n); // crea stringa dai bytes ricevuti
+						std::cout << "[RECV fd=" << fd << "] " << received << std::endl;
                         
                         // Process line(s) terminated by '\n'
                         size_t pos;
@@ -356,7 +361,7 @@ int main(int argc, char **argv) {
 
                             }
                             else {
-                                if (handle_command(fd, trimmed, outbuf, client_name, password, authenticated, pfds)) {
+                                if (handle_command(fd, trimmed, outbuf, client_name, password, pfds)) {
                                     // A command was handled; make sure sender gets any response queued by handle_command
                                     pfds[i].events |= POLLOUT;
                                 } 
