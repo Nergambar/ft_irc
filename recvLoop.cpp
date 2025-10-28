@@ -6,11 +6,42 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 11:35:35 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/28 11:46:04 by negambar         ###   ########.fr       */
+/*   Updated: 2025/10/28 11:59:58 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "irc.hpp"
+
+void    checkNick(std::map<int, std::string> &client_name, std::string &newNick, int fd, std::map<int, std::string> &outbuf,
+        std::vector<pollfd> &pfds)
+{
+    bool is_taken = false;
+    for (std::map<int, std::string>::iterator it = client_name.begin(); it != client_name.end(); ++it) {
+        if (it->first != fd && it->second == newNick) {
+            is_taken = true;
+            break;
+        }
+    }
+
+    if (is_taken) {
+        outbuf[fd].append("Nickname '"+ newNick + "' is already in use. Please choose another:\r\n");
+    } else {
+        std::string oldNick = client_name[fd];
+        client_name[fd] = newNick;
+        outbuf[fd].append("You are now known as " + newNick + ".\r\n");
+        
+        // Broadcast join message now that the nickname is set
+        std::string join_msg = newNick + " joined the chat.\r\n";
+        for (size_t k = 1; k < pfds.size(); ++k) {
+            if (pfds[k].fd != fd) {
+                outbuf[pfds[k].fd].append(join_msg);
+                pfds[k].events |= POLLOUT;
+            }
+        }
+    }
+}
+
+
 
 bool recvLoop(int fd, std::map<int, std::string> &inbuf, std::map<int, std::string> &outbuf,
     std::map<int, bool> &authenticated, std::string &password, std::vector<pollfd> &pfds, 
@@ -62,30 +93,7 @@ bool recvLoop(int fd, std::map<int, std::string> &inbuf, std::map<int, std::stri
                         outbuf[fd].append("Nickname cannot be empty. Please choose your nickname:\r\n");
                     } else {
                         // Simple check if the nickname is already taken (case-sensitive)
-                        bool is_taken = false;
-                        for (std::map<int, std::string>::iterator it = client_name.begin(); it != client_name.end(); ++it) {
-                            if (it->first != fd && it->second == newNick) {
-                                is_taken = true;
-                                break;
-                            }
-                        }
-
-                        if (is_taken) {
-                            outbuf[fd].append("Nickname '"+ newNick + "' is already in use. Please choose another:\r\n");
-                        } else {
-                            std::string oldNick = client_name[fd];
-                            client_name[fd] = newNick;
-                            outbuf[fd].append("You are now known as " + newNick + ".\r\n");
-                            
-                            // Broadcast join message now that the nickname is set
-                            std::string join_msg = newNick + " joined the chat.\r\n";
-                            for (size_t k = 1; k < pfds.size(); ++k) {
-                                if (pfds[k].fd != fd) {
-                                    outbuf[pfds[k].fd].append(join_msg);
-                                    pfds[k].events |= POLLOUT;
-                                }
-                            }
-                        }
+                        checkNick(client_name, newNick, fd, outbuf, pfds);
                     }
                     pfds[i].events |= POLLOUT;
 
