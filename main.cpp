@@ -155,16 +155,6 @@ int main(int argc, char **argv) {
                           << " ip=" << ipbuf
                           << " port=" << ntohs(cli_addr.sin_port) << std::endl;
                 
-                /* outbuf[client_fd].append("Welcome. This server requires a password.\r\n");
-                outbuf[client_fd].append("Enter password:\r\n");
-                // Ensure the prompt is sent out
-                for (size_t k = 1; k < pfds.size(); ++k)
-                {
-                    if (pfds[k].fd == client_fd)
-                    {
-                        pfds[k].events |= POLLOUT;
-                    }
-                } */
 
             }
             pfds[0].revents = 0;

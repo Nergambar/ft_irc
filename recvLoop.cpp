@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 11:35:35 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/28 15:23:29 by negambar         ###   ########.fr       */
+/*   Updated: 2025/10/28 17:23:20 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,16 +44,15 @@ void    checkNick(std::map<int, std::string> &client_name, std::string &newNick,
 void enterPw(std::string &trimmed, int fd, std::map<int, std::string> &outbuf, std::map<int, bool> &authenticated, std::vector<pollfd> &pfds,
     std::string &password, int i)
 {
-    if (trimmed.empty()) {
-        outbuf[fd].append("Enter password:\r\n");
-    } else if (trimmed == password) {
+    trimmed = trimmed.substr(5, trimmed.length() - 5);
+    if (trimmed == password) {
         authenticated[fd] = true;
-        outbuf[fd].append("Password accepted. You are now authenticated.\r\nSet your nickname:\r\n");
+
         pfds[i].events |= POLLOUT;
         // Broadcast join now that this client is authenticated
     } else {
         outbuf[fd].append("Incorrect password. Try again:\r\n");
-    }
+        }
 }
 
 
