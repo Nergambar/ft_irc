@@ -1,5 +1,5 @@
-#include "servers.hpp"
-#include "irc.hpp"
+#include "library/servers.hpp"
+#include "library/irc.hpp"
 
 int main()
 {

@@ -6,11 +6,11 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 11:35:35 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/28 11:59:58 by negambar         ###   ########.fr       */
+/*   Updated: 2025/10/28 15:23:29 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "irc.hpp"
+#include "library/irc.hpp"
 
 void    checkNick(std::map<int, std::string> &client_name, std::string &newNick, int fd, std::map<int, std::string> &outbuf,
         std::vector<pollfd> &pfds)
@@ -41,6 +41,20 @@ void    checkNick(std::map<int, std::string> &client_name, std::string &newNick,
     }
 }
 
+void enterPw(std::string &trimmed, int fd, std::map<int, std::string> &outbuf, std::map<int, bool> &authenticated, std::vector<pollfd> &pfds,
+    std::string &password, int i)
+{
+    if (trimmed.empty()) {
+        outbuf[fd].append("Enter password:\r\n");
+    } else if (trimmed == password) {
+        authenticated[fd] = true;
+        outbuf[fd].append("Password accepted. You are now authenticated.\r\nSet your nickname:\r\n");
+        pfds[i].events |= POLLOUT;
+        // Broadcast join now that this client is authenticated
+    } else {
+        outbuf[fd].append("Incorrect password. Try again:\r\n");
+    }
+}
 
 
 bool recvLoop(int fd, std::map<int, std::string> &inbuf, std::map<int, std::string> &outbuf,
@@ -57,7 +71,8 @@ bool recvLoop(int fd, std::map<int, std::string> &inbuf, std::map<int, std::stri
             // 🔍 stampa quello che è arrivato
             std::string received(buf, n); // crea stringa dai bytes ricevuti
             std::cout << "[RECV fd=" << fd << "] " << received << std::endl;
-            
+            /* while (startswith(received, "CAP LS") || startswith(received, "PASS") || startswith(received, "NICK"))
+                parseRecv(received); */
             // Process line(s) terminated by '\n'
             size_t pos;
             while ((pos = inbuf[fd].find('\n')) != std::string::npos) {
@@ -70,18 +85,7 @@ bool recvLoop(int fd, std::map<int, std::string> &inbuf, std::map<int, std::stri
                     trimmed.erase(trimmed.size()-1, 1);
 
                 if (!authenticated[fd] && !password.empty()) {
-                    if (trimmed.empty()) {
-                        outbuf[fd].append("Enter password:\r\n");
-                    } else if (trimmed == password) {
-                        authenticated[fd] = true;
-                        outbuf[fd].append("Password accepted. You are now authenticated.\r\n");
-                        outbuf[fd].append("Set your nickname:\r\n");
-                        pfds[i].events |= POLLOUT;
-                        // Broadcast join now that this client is authenticated
-                        pfds[i].events |= POLLOUT;
-                    } else {
-                        outbuf[fd].append("Incorrect password. Try again:\r\n");
-                    }
+                    enterPw(trimmed, fd, outbuf, authenticated, pfds, password, i); //INSERIMENTO PASSWORD
                     pfds[i].events |= POLLOUT;
                 } 
                 else if (authenticated[fd] && client_name[fd].find("user") == 0) {
@@ -131,7 +135,7 @@ bool recvLoop(int fd, std::map<int, std::string> &inbuf, std::map<int, std::stri
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 break; // No more data to read now
             } else {
-                perror("recv");
+                std::cerr << "recv" << std::endl;
                 closed = true;
                 break;
             }

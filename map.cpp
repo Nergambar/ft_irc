@@ -6,11 +6,11 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:34 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/22 16:17:04 by negambar         ###   ########.fr       */
+/*   Updated: 2025/10/28 14:32:30 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "irc.hpp"
+#include "library/irc.hpp"
 
 using namespace std;
 

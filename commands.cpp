@@ -6,11 +6,11 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 12:07:03 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/23 13:19:04 by negambar         ###   ########.fr       */
+/*   Updated: 2025/10/28 14:32:30 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "irc.hpp"
+#include "library/irc.hpp"
 
 /* 
  * fa entrare lo user nel canale se esiste, se no lo crea e rende lo user operatore

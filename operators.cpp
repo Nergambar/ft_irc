@@ -6,11 +6,11 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 10:06:12 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/22 16:20:33 by negambar         ###   ########.fr       */
+/*   Updated: 2025/10/28 14:32:30 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "irc.hpp"
+#include "library/irc.hpp"
 
 /* 
  * se l'utente che usa il comando e' operatore di quel canale, rende il secondo user tale.

@@ -6,11 +6,11 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:28:17 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/23 13:37:11 by negambar         ###   ########.fr       */
+/*   Updated: 2025/10/28 14:32:30 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "irc.hpp"
+#include "library/irc.hpp"
 
 User::User() : username(""), nickname(""), hostName(""), isOperator(false), channelPerm(), serv(NULL), messages(), maxChannel(9)
 {

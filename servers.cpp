@@ -6,11 +6,11 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:30 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/22 15:47:07 by negambar         ###   ########.fr       */
+/*   Updated: 2025/10/28 14:32:30 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "servers.hpp"
+#include "library/servers.hpp"
 
 std::vector<Channel> &Server::getChannel()
 {
