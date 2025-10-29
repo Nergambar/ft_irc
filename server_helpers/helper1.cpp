@@ -1,37 +1,24 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   servers.cpp                                        :+:      :+:    :+:   */
+/*   helper1.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/22 09:56:30 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/29 12:51:37 by negambar         ###   ########.fr       */
+/*   Created: 2025/10/29 11:52:49 by negambar          #+#    #+#             */
+/*   Updated: 2025/10/29 12:29:18 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "library/servers.hpp"
+#include "../library/servers.hpp"
 
-std::vector<Channel> &Server::getChannel()
-{
-    return (this->allChannel);
-}
 
-void Server::setInbuf(int fd, std::string &buf)
+void Server::setClientName(User &u)
 {
-    inbuf[fd] = buf;
-}
-
-void Server::setOutbuf(int fd, std::string &buf)
-{
-    outbuf[fd] = buf;
+    int fd = u.getFd();
+    std::ostringstream name_os;
+    name_os << "user" << fd;
+    u.setNickname(name_os.str());
+    users[fd] = &u;
 }
 
-std::string         Server::getInbuf(int fd)
-{
-    return (inbuf[fd]);
-}
-std::string         Server::getOutbuf(int fd)
-{
-    return (outbuf[fd]);
-}

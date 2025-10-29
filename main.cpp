@@ -83,7 +83,8 @@ int main(int argc, char **argv) {
     if (server_fd < 0) return 1;
     
     std::string password = argv[2];
-
+    Server serv;
+    
     std::cout << "Chat Server listening on port " << port << std::endl;
     
     // Vector of pollfd: index 0 -> server_fd, the others -> clients
@@ -97,9 +98,10 @@ int main(int argc, char **argv) {
     // Buffers for each client (in and out)
     std::map<int, std::string> inbuf;
     std::map<int, std::string> outbuf;
-    std::map<int, std::string> client_name; // Simple map to store client 'name' (fd in this case)
-    std::map<int, bool> authenticated;
     
+    std::map<int, std::string> client_name; // Simple map to store client 'name' (fd in this case)
+
+    std::map<int, bool> authenticated;
     while (true) {
         int timeout = -1; // Wait indefinitely
         int rv = poll(&pfds[0], pfds.size(), timeout);
@@ -134,20 +136,23 @@ int main(int argc, char **argv) {
                 // Add to pfds vector
                 struct pollfd np;
                 np.fd = client_fd;
+                User u(client_fd);
                 np.events = POLLIN; // Initially interested in reading
                 np.revents = 0;
                 pfds.push_back(np);
 
                 // Initialize buffers and client info
-                inbuf[client_fd] = "";
-                outbuf[client_fd] = "";
+                std::string s = "";
+                serv.setInbuf(client_fd, s);
+                serv.setOutbuf(client_fd, s);
                 
                 char ipbuf[INET_ADDRSTRLEN];
                 inet_ntop(AF_INET, &(cli_addr.sin_addr), ipbuf, INET_ADDRSTRLEN);
                 
-                std::ostringstream name_os;
-                name_os << "user" << client_fd;
-                client_name[client_fd] = name_os.str();
+                serv.setClientName(u);
+                // std::ostringstream name_os;
+                // name_os << "user" << client_fd;
+                // client_name[client_fd] = name_os.str();
                 
                 authenticated[client_fd] = password.empty();
 
@@ -211,8 +216,8 @@ int main(int argc, char **argv) {
             if (pfds.size() > i) pfds[i].revents = 0;
         } // end for clients
     } // end while
-
     // Clean shutdown
+    serv.~Server();
     for (size_t i = 0; i < pfds.size(); ++i) close(pfds[i].fd);
     return 0;
 }
