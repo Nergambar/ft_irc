@@ -1,14 +1,14 @@
-/******************************************************************************/
+/* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   recvLoop.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
+/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 11:35:35 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/29 13:23:09 by scarlucc         ###   ########.fr       */
+/*   Updated: 2025/10/29 16:55:41 by negambar         ###   ########.fr       */
 /*                                                                            */
-/******************************************************************************/
+/* ************************************************************************** */
 
 #include "library/irc.hpp"
 
@@ -66,21 +66,21 @@ bool recvLoop(int fd, std::map<int, std::string> &inbuf, std::map<int, std::stri
 	if (n > 0) {
 		inbuf[fd].append(buf, buf + n);
 
-		// 🔍 stampa quello che è arrivato
-		std::string received(buf, n); // crea stringa dai bytes ricevuti
-		std::cout << "[RECV fd=" << fd << "] " << received << std::endl;
-		/* while (startswith(received, "CAP LS") || startswith(received, "PASS") || startswith(received, "NICK"))
-			parseRecv(received); */
-		// Process line(s) terminated by '\n'
-		size_t pos;
-		while ((pos = inbuf[fd].find('\n')) != std::string::npos) {
-			std::string line = inbuf[fd].substr(0, pos + 1);
-			inbuf[fd].erase(0, pos + 1);
-			
-			std::string trimmed = line;
-			
-			while (!trimmed.empty() && (trimmed[trimmed.size()-1] == '\n' || trimmed[trimmed.size()-1] == '\r'))
-				trimmed.erase(trimmed.size()-1, 1);
+            // 🔍 stampa quello che è arrivato
+            std::string received(buf, n); // crea stringa dai bytes ricevuti
+            std::cout << "[RECV fd=" << fd << "] " << received << "\n";
+            /* while (startswith(received, "CAP LS") || startswith(received, "PASS") || startswith(received, "NICK"))
+                parseRecv(received); */
+            // Process line(s) terminated by '\n'
+            size_t pos;
+            while ((pos = inbuf[fd].find('\n')) != std::string::npos) {
+                std::string line = inbuf[fd].substr(0, pos + 1);
+                inbuf[fd].erase(0, pos + 1);
+                
+                std::string trimmed = line;
+                
+                while (!trimmed.empty() && (trimmed[trimmed.size()-1] == '\n' || trimmed[trimmed.size()-1] == '\r'))
+                    trimmed.erase(trimmed.size()-1, 1);
 
 			if (!authenticated[fd] && !password.empty()) {
 				enterPw(trimmed, fd, outbuf, authenticated, pfds, password, i); //INSERIMENTO PASSWORD
