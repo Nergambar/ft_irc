@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:41 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/28 15:11:58 by negambar         ###   ########.fr       */
+/*   Updated: 2025/10/29 12:08:07 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,39 +33,6 @@
 #include <arpa/inet.h>
 #include "servers.hpp"
 
-class User
-{
-    private:
-        std::string username;
-        std::string nickname;
-        std::string hostName;
-        bool        isOperator;
-        std::map<std::string, bool> channelPerm;
-        Server  *serv;
-        std::vector<std::string> messages;
-        int   maxChannel; // has to be initialised to 9
-
-    public:
-        User(); //only because i need to init maxChannel
-        std::string getUsername() const;
-        std::string getNickname() const;
-        
-        void    makeOperator(User &user, std::string channel);
-        void    joinChannel(std::string channel);
-        void    kick(User &u, std::string channel);
-
-        void        setTopic(Channel &c, const std::string &t);
-        void        setLimit(Channel &c, int l);
-        void        setPw(Channel &c, const std::string &pw);
-
-        /* testing functions */
-        User(std::string nickname);
-        bool        isOper(std::string name);
-        void        setNickname(std::string nickname);
-        void        setUsername(std::string username);
-        const std::map<std::string, bool>& getPermissions() const;
-        void        setServ(Server *s) {serv = s;}
-};
 
 int     create_serv_pocket(int port);
 int     addNickname(std::map<int,std::string>&cp, const std::string &n);
