@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 11:35:35 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/28 17:23:20 by negambar         ###   ########.fr       */
+/*   Updated: 2025/10/29 15:55:36 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,7 +69,7 @@ bool recvLoop(int fd, std::map<int, std::string> &inbuf, std::map<int, std::stri
 
             // 🔍 stampa quello che è arrivato
             std::string received(buf, n); // crea stringa dai bytes ricevuti
-            std::cout << "[RECV fd=" << fd << "] " << received << std::endl;
+            std::cout << "[RECV fd=" << fd << "] " << received << "\n";
             /* while (startswith(received, "CAP LS") || startswith(received, "PASS") || startswith(received, "NICK"))
                 parseRecv(received); */
             // Process line(s) terminated by '\n'

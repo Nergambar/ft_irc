@@ -136,7 +136,8 @@ int main(int argc, char **argv) {
                 // Add to pfds vector
                 struct pollfd np;
                 np.fd = client_fd;
-                User u(client_fd);
+                User u;
+                serv.setUser(u, client_fd);
                 np.events = POLLIN; // Initially interested in reading
                 np.revents = 0;
                 pfds.push_back(np);
@@ -193,10 +194,7 @@ int main(int argc, char **argv) {
                         }
                     }
                     
-                    close(fd);
-                    inbuf.erase(fd);
-                    outbuf.erase(fd);
-                    client_name.erase(fd);
+                    serv.clientCleanUp(client_name[fd], fd);
                     pfds.erase(pfds.begin() + i);
                     --i;
                     continue;

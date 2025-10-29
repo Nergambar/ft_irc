@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:28:17 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/29 12:54:50 by negambar         ###   ########.fr       */
+/*   Updated: 2025/10/29 15:19:25 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -112,4 +112,9 @@ void    User::setPw(Channel &c, const std::string &pw)
 const std::map<std::string, bool>& User::getPermissions() const
 {
     return (this->channelPerm);
+}
+
+void       User::setFd(int fd)
+{
+    this->fd = fd;
 }

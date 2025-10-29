@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:28 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/29 12:55:19 by negambar         ###   ########.fr       */
+/*   Updated: 2025/10/29 15:36:24 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,6 +54,7 @@ class User
         std::string getNickname() const;
         void        setServ(Server *s) {serv = s;}
         int         getFd();
+        void        setFd(int fd);
 
         
         /* testing functions */
@@ -115,6 +116,8 @@ class Server{
         void                setOutbuf(int fd, std::string &buf);
         std::string         getInbuf(int fd);
         std::string         getOutbuf(int fd);
+        void                clientCleanUp(std::string &name, int fd);
+        void                setUser(User &u, int fd);
 
         Server() {};
         ~Server() {};
