@@ -1,14 +1,14 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   recvLoop.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 11:35:35 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/29 16:55:41 by negambar         ###   ########.fr       */
+/*   Updated: 2025/10/30 14:07:26 by scarlucc         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
 #include "library/irc.hpp"
 
@@ -68,19 +68,41 @@ bool recvLoop(int fd, std::map<int, std::string> &inbuf, std::map<int, std::stri
 
             // 🔍 stampa quello che è arrivato
             std::string received(buf, n); // crea stringa dai bytes ricevuti
-            std::cout << "[RECV fd=" << fd << "] " << received << "\n";
-            /* while (startswith(received, "CAP LS") || startswith(received, "PASS") || startswith(received, "NICK"))
-                parseRecv(received); */
-            // Process line(s) terminated by '\n'
+
+			// Debug: stampa in modo leggibile CR (\r) / LF(\n)
+			/* std::string printable;
+			for (size_t j = 0; j < received.size(); ++j) {
+				char c = received[j];
+				if (c == '\r') printable += "\\r";
+				else if (c == '\n') printable += "\\n";
+				else printable += c;
+			} */
+
+			bool crlf_only = (received.find_first_not_of("\r\n") == std::string::npos);//controllo Neri 30/10/2025
+
+			// Append the chunk only if it's not pure CR/LF, OR if we already have partial data
+			// for this fd (a lone '\n' arriving can complete a pending line).
+			if (crlf_only) {  //controllo Neri 30/10/2025
+				return (false);
+			}
+			
+            std::cout << "[RECV fd=" << fd << "] " << received << std::endl;
+			
             size_t pos;
-            while ((pos = inbuf[fd].find('\n')) != std::string::npos) {
-                std::string line = inbuf[fd].substr(0, pos + 1);
-                inbuf[fd].erase(0, pos + 1);
+            while ((pos = inbuf[fd].find("\r\n")) != std::string::npos) {
+                std::string line = inbuf[fd].substr(0, pos + 2);
+                inbuf[fd].erase(0, pos + 2);
                 
                 std::string trimmed = line;
-                
-                while (!trimmed.empty() && (trimmed[trimmed.size()-1] == '\n' || trimmed[trimmed.size()-1] == '\r'))
-                    trimmed.erase(trimmed.size()-1, 1);
+
+				if (trimmed.size() >= 2 && trimmed.substr(trimmed.size() - 2) == "\r\n")
+					trimmed.erase(trimmed.size() - 2);
+
+				while (!trimmed.empty() && (trimmed[trimmed.size() - 1] == '\n' || trimmed[trimmed.size() - 1] == '\r'))
+        			trimmed.erase(trimmed.size()-1, 1);
+
+				if (trimmed.empty())
+					continue;
 
 			if (!authenticated[fd] && !password.empty()) {
 				enterPw(trimmed, fd, outbuf, authenticated, pfds, password, i); //INSERIMENTO PASSWORD

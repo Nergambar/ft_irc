@@ -127,24 +127,14 @@ int main(int argc, char **argv) {
 				continue;
 			}
 
-<<<<<<< HEAD
 			// Add to pfds vector
 			struct pollfd np;
 			np.fd = client_fd;
-			User u(client_fd);
+			User u;
+			serv.setUser(u, client_fd);
 			np.events = POLLIN; // Initially interested in reading
 			np.revents = 0;
 			pfds.push_back(np);
-=======
-                // Add to pfds vector
-                struct pollfd np;
-                np.fd = client_fd;
-                User u;
-                serv.setUser(u, client_fd);
-                np.events = POLLIN; // Initially interested in reading
-                np.revents = 0;
-                pfds.push_back(np);
->>>>>>> objectifying_irc
 
 			// Initialize buffers and client info
 			std::string s = "";
