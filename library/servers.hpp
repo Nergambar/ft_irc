@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:28 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/29 15:36:24 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/03 13:50:40 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -116,7 +116,9 @@ class Server{
         void                setOutbuf(int fd, std::string &buf);
         std::string         getInbuf(int fd);
         std::string         getOutbuf(int fd);
-        void                clientCleanUp(std::string &name, int fd);
+        void                clientCleanUp(int fd, std::map<int, std::string> &client_names, 
+                                std::map<int, bool> &authenticated, std::vector<pollfd> &pfds,
+                                size_t i);
         void                setUser(User &u, int fd);
 
         Server() {};

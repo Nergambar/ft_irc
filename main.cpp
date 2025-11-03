@@ -185,7 +185,7 @@ int main(int argc, char **argv) {
                         }
                     }
                     
-                    serv.clientCleanUp(client_name[fd], fd);
+                    serv.clientCleanUp(fd, client_name, authenticated, pfds, i);
                     pfds.erase(pfds.begin() + i);
                     --i;
                     continue;
