@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:28 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/03 13:50:40 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/03 17:23:00 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -124,6 +124,7 @@ class Server{
         Server() {};
         ~Server() {};
         Channel             *findChannel(std::string name);
+        User                *getUser(int fd);
         
 };
 

@@ -6,31 +6,26 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 14:26:41 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/28 14:33:00 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/03 17:14:09 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "library/irc.hpp"
 
-
-bool startswith(const std::string &s, const std::string &s2)
-{
-    if (s2.size() > s.size()) return false;
-    return s.compare(0, s2.size(), s2) == 0;
-}
-
 bool handle_command(int fd, const std::string &line,
                     std::map<int,std::string> &outbuf,
                     std::map<int,std::string> &client,
                     std::string       &server_password,
-                    std::vector<struct pollfd> &pfds)
+                    std::vector<struct pollfd> &pfds,
+                    Server  &serv)
 {
-    if (line.empty() || (line[0] != '/' && !startswith(line, "PASS") && !startswith(line, "NICK")))
+    std::vector<std::string> split = ft_split(line);
+    
+    if (split[0] != "JOIN" && split[0] != "NICK" && split[0] != "PASS")
         return (false);
     std::istringstream iss(line);
     std::string cmd;
     iss >> cmd;
-
     if (cmd == "/nick" || cmd == "NICK")
     {
         std::string newNick;
@@ -93,6 +88,34 @@ bool handle_command(int fd, const std::string &line,
             }
         }
         return (true);
+    }
+    else if (cmd == "/join" || cmd == "JOIN")
+    {
+        std::string channel;
+        iss >> channel;
+        if (channel.empty())
+        {
+            outbuf[fd].append("Usage: /join <channel>\r\n");
+            return true;
+        }
+        User *u = serv.getUser(fd);
+        if (!u)
+        {
+            outbuf[fd].append("Internal error: user not found\r\n");
+            return true;
+        }
+        u->joinChannel(channel);
+        // Ensure outbuf exists and mark fd for POLLOUT so the client receives JOIN/MODE replies
+        (void)outbuf[fd];
+        for (size_t k = 1; k < pfds.size(); ++k)
+        {
+            if (pfds[k].fd == fd)
+            {
+                pfds[k].events |= POLLOUT;
+                break;
+            }
+        }
+        return true;
     }
     outbuf[fd].append(std::string("Unknown command: ") + cmd + "\r\n");
     return true;

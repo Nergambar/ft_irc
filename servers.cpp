@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:30 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/03 13:51:21 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/03 15:44:09 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,4 +63,12 @@ void       Server::setUser(User &u, int fd)
 {
     u.setFd(fd);
     users[fd] = &u;
+}
+
+User        *Server::getUser(int fd)
+{
+    std::map<int, User *>::iterator it = users.find(fd);
+    if (it != users.end())
+        return (it->second);
+    return NULL;
 }

@@ -172,7 +172,7 @@ int main(int argc, char **argv) {
 
             // Data available for reading (POLLIN)
             if (rev & POLLIN) {
-                if (recvLoop(fd, inbuf, outbuf, authenticated, password, pfds, client_name, i))
+                if (recvLoop(fd, serv, inbuf, outbuf, authenticated, password, pfds, client_name, i))
                 {
                     // Close client: Cleanup done in the error/hangup block above
                     // The client will be cleaned up in the loop iteration's POLLERR/POLLHUP check 
@@ -190,6 +190,7 @@ int main(int argc, char **argv) {
                     --i;
                     continue;
                 }
+
             } // end POLLIN
 
             // Socket ready for writing (POLLOUT)

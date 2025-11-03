@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 11:35:35 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/03 13:42:30 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/03 16:20:07 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,7 +64,7 @@ void enterPw(std::string &trimmed, int fd, std::map<int, std::string> &outbuf, s
 // ...existing code...
 
 
-bool recvLoop(int fd, std::map<int, std::string> &inbuf, std::map<int, std::string> &outbuf,
+bool recvLoop(int fd, Server &serv, std::map<int, std::string> &inbuf, std::map<int, std::string> &outbuf,
               std::map<int, bool> &authenticated, std::string &password, std::vector<pollfd> &pfds,
               std::map<int, std::string> &client_name, int i)
 {
@@ -106,9 +106,11 @@ bool recvLoop(int fd, std::map<int, std::string> &inbuf, std::map<int, std::stri
 
             if (line.empty())
                 continue;
+            if (line == "CAP LS 302")
+                continue;
 
             // === Authentication & nickname logic ===
-            if (!authenticated[fd] && !password.empty())
+            if (!authenticated[fd])
             {
                 enterPw(line, fd, outbuf, authenticated, pfds, password, i);
                 pfds[i].events |= POLLOUT;
@@ -128,7 +130,7 @@ bool recvLoop(int fd, std::map<int, std::string> &inbuf, std::map<int, std::stri
             else
             {
                 // Handle commands
-                if (!handle_command(fd, line, outbuf, client_name, password, pfds))
+                if (!handle_command(fd, line, outbuf, client_name, password, pfds, serv))
                 {
                     // Broadcast message
                     std::string msg = "[" + client_name[fd] + "]: " + line + "\r\n";

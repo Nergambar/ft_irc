@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:41 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/03 14:38:29 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/03 15:53:55 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,7 @@ int     addNickname(std::map<int,std::string>&cp, const std::string &n);
 int     addWithKey(std::map<int, std::string>&copy, int key, const std::string &n);
 
 
-bool recvLoop(int fd, std::map<int, std::string> &inbuf, std::map<int, std::string> &outbuf,
+bool recvLoop(int fd, Server &serv, std::map<int, std::string> &inbuf, std::map<int, std::string> &outbuf,
     std::map<int, bool> &authenticated, std::string &password, std::vector<pollfd> &pfds,  
     std::map<int, std::string> &client_name, int i);
 
@@ -58,7 +58,8 @@ bool handle_command(int fd, const std::string &line,
                     std::map<int,std::string> &outbuf,
                     std::map<int,std::string> &client,
                     std::string       &server_password,
-                    std::vector<struct pollfd> &pfds);
+                    std::vector<struct pollfd> &pfds,
+                    Server                      &serv);
 void closeClient(std::map<int, std::string> &client_name, int fd, std::vector<pollfd> &pfds,
         std::map<int, std::string> &outbuf, std::map<int, std::string> &inbuf, short rev, int i);
 
