@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:41 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/29 12:08:07 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/03 14:38:29 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,5 +64,8 @@ void closeClient(std::map<int, std::string> &client_name, int fd, std::vector<po
 
 void    readyForWrite(std::map<int, std::string> &client_name, int fd, std::vector<pollfd> &pfds,
         std::map<int, std::string> &outbuf, std::map<int, std::string> &inbuf, int i);
+
+
+std::vector<std::string> ft_split(std::string str);
 
 #endif

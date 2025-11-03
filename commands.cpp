@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 12:07:03 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/28 14:32:30 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/03 14:52:46 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,6 +80,32 @@ void    User::joinChannel(std::string channel)
             std::cout << channel << "'s limit reached! No more user can join!" << std::endl;
     }
     this->maxChannel--;
+    // --- send JOIN notification to the client's outgoing buffer so HexChat updates UI ---
+    // Format a minimal valid JOIN message: :nick!user@host JOIN <channel>\r\n
+    // use available getters; fall back to "host" literal if none
+    int fd = this->getFd();
+    if (fd >= 0)
+    {
+        std::string nick = this->getNickname();
+        std::string user = this->getUsername();
+        std::string host = "localhost";
+        // compose message
+        std::string joinMsg = ":" + nick + "!" + user + "@" + host + " JOIN " + channel + "\r\n";
+
+        // append to server out buffer for this fd
+        std::string out = serv->getOutbuf(fd);
+        out.append(joinMsg);
+
+        // If the user created the channel, grant operator mode notification so client shows ops
+        if (created)
+        {
+            // MODE message from server announcing +o to the user
+            std::string modeMsg = ":" + nick + " MODE " + channel + " +o " + nick + "\r\n";
+            out.append(modeMsg);
+        }
+
+        serv->setOutbuf(fd, out);
+    }
 }
 
 void    User::kick(User &u, std::string channel)

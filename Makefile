@@ -3,7 +3,7 @@ NAME = ircserv
 CXX = c++
 CXXFLAGS =  -Wall -Wextra -Werror -std=c++98 -Iincludes -g
 
-SRC 	= main.cpp users.cpp operators.cpp servers.cpp commands.cpp recvLoop.cpp handleClient.cpp handleCommands.cpp server_helpers/helper1.cpp channel.cpp
+SRC 	= main.cpp users.cpp operators.cpp servers.cpp commands.cpp recvLoop.cpp handleClient.cpp handleCommands.cpp server_helpers/helper1.cpp channel.cpp parsing1.cpp
 OBJ 	= $(SRC:.cpp=.o)
 
 
