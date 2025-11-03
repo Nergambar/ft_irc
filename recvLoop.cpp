@@ -1,14 +1,14 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   recvLoop.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 11:35:35 by negambar          #+#    #+#             */
-/*   Updated: 2025/10/30 16:02:04 by negambar         ###   ########.fr       */
+/*   Updated: 2025/10/30 17:53:32 by scarlucc         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
 #include "library/irc.hpp"
 
@@ -75,17 +75,20 @@ bool recvLoop(int fd, std::map<int, std::string> &inbuf, std::map<int, std::stri
     if (n > 0)
     {
         std::string received(buf, n);
-
         // Detect if only CR/LF characters were received
-        bool crlf_only = (received.find_first_not_of("\r\n") == std::string::npos);
+        bool crlf_only = false;
+		if (received == "\r\n")
+			crlf_only = true;
         bool sent_crlf = false;
 		if (inbuf[fd] == "\r\n")
 			sent_crlf = true;
 
         // Skip pure CR/LF unless there's existing partial data
-        if (crlf_only && sent_crlf)
+        if (!sent_crlf && crlf_only)
             return false;
 
+		if (!(received.find("\r") == received.size() - 2 && received.find("\n") == received.size() - 1))
+			received.append("\r\n");
         std::cout << "[RECV fd=" << fd << "] " << received << std::endl;
         inbuf[fd].append(received);
 
