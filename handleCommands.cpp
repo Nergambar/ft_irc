@@ -6,11 +6,53 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 14:26:41 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/04 09:37:52 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/04 10:25:26 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "library/irc.hpp"
+
+int setNick(std::map<int, std::string> &outbuf, int fd, std::istringstream &iss, std::map<int, std::string> &client, std::vector<pollfd> &pfds)
+{
+    std::string newNick;
+    std::ostringstream ss;
+    ss << fd;
+    iss >> newNick;
+    bool is_taken = false;
+    for (std::map<int, std::string>::iterator it = client.begin(); it != client.end(); ++it) {
+        if (it->first != fd && it->second == newNick) {
+            is_taken = true;
+            break;
+        }
+    }
+    if (is_taken) {
+        // outbuf[fd].append("Nickname '"+ newNick + "' is already in use. Please choose another.\r\n");//ERR_NICKCOLLISION
+        return (1);
+    } else {
+        if (newNick.empty())
+            outbuf[fd].append("Usage: NICK <name>\n");
+        else{
+            std::string old;
+            if (client[fd].empty())
+            {
+                old = "user" + ss.str();
+            }
+            else
+                old = client[fd];
+            client[fd] = newNick;
+            std::string msg = old + " is now " + newNick + "\r\n";
+            for (size_t k = 1; k < pfds.size(); ++k){
+                if (pfds[k].fd != fd){
+                    outbuf[pfds[k].fd].append(msg);
+                    pfds[k].events |= POLLOUT;
+                }
+            }
+            outbuf[fd].append("You are now "+ newNick + "\r\n");
+        }
+    }
+    return (0);
+}
+
 
 bool handle_command(int fd, const std::string &line,
                     std::map<int,std::string> &outbuf,
@@ -20,53 +62,24 @@ bool handle_command(int fd, const std::string &line,
                     Server  &serv)
 {
     std::vector<std::string> split = ft_split(line);
-    
+    (void)serv;
+
     if (split[0] != "JOIN" && split[0] != "NICK" && split[0] != "PASS")
         return (false);
     std::istringstream iss(line);
     std::string cmd;
     iss >> cmd;
-    if (cmd == "/nick" || cmd == "NICK")
+    if (cmd == "NICK")
     {
-        std::string newNick;
-        std::ostringstream ss;
-        ss << fd;
-        iss >> newNick;
-        bool is_taken = false;
-        for (std::map<int, std::string>::iterator it = client.begin(); it != client.end(); ++it) {
-            if (it->first != fd && it->second == newNick) {
-                is_taken = true;
-                break;
-            }
+        if (setNick(outbuf, fd, iss, client, pfds) == 1)
+        {
+            outbuf[fd].append("Nickname is already in use. Please choose another.\r\n");//ERR_NICKCOLLISION
+            return false;
         }
-        if (is_taken) {
-            outbuf[fd].append("Nickname '"+ newNick + "' is already in use. Please choose another.\r\n");//ERR_NICKCOLLISION
+        else
             return (true);
-        } else {
-            if (newNick.empty())
-                outbuf[fd].append("Usage: /nick <name> OR NICK <name>\n");
-            else{
-                std::string old;
-                if (client[fd].empty())
-                {
-                    old = "user" + ss.str();
-                }
-                else
-                    old = client[fd];
-                client[fd] = newNick;
-                std::string msg = old + " is now " + newNick + "\r\n";
-                for (size_t k = 1; k < pfds.size(); ++k){
-                    if (pfds[k].fd != fd){
-                        outbuf[pfds[k].fd].append(msg);
-                        pfds[k].events |= POLLOUT;
-                    }
-                }
-                outbuf[fd].append("You are now "+ newNick + "\r\n");
-            }
-            return (true);
-        }
     }
-    else if (cmd == "/pass" || cmd == "PASS")
+    else if (cmd == "PASS")
     {
         std::string newpw;
         iss >> newpw;
@@ -89,7 +102,7 @@ bool handle_command(int fd, const std::string &line,
         }
         return (true);
     }
-    /* else if (cmd == "/join" || cmd == "JOIN")
+    /* else if (cmd == "JOIN")
     {
         std::string channel;
         iss >> channel;
@@ -121,6 +134,7 @@ bool handle_command(int fd, const std::string &line,
         }
         return true;
     } */
+    // else if (cmd == "USER")
     outbuf[fd].append(std::string("Unknown command: ") + cmd + "\r\n");
-    return true;
+    return false;
 }
