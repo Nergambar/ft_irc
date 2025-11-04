@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:28:17 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/03 17:25:52 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/03 17:39:15 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,13 +14,13 @@
 
 User::User() : username(""), nickname(""), hostName(""), isOperator(false), fd(-1), channelPerm(), messages(), maxChannel(9)
 {
-    setServ(serv);
+    // setServ(serv);
     messages.reserve(maxChannel);
 }
 
 User::User(int fd) : username(""), nickname(""), hostName(""), isOperator(false), fd(fd), channelPerm(), messages(), maxChannel(9)
 {
-    setServ(serv);
+    // setServ(serv);
     messages.reserve(maxChannel);
 }
 
@@ -74,10 +74,10 @@ std::string User::getUsername() const
 //make operator moved to operators.cpp
 
 
-void    User::setTopic(Channel &c, const std::string &t)
+void    User::setTopic(Channel &c, const std::string &t, Server &serv)
 {
     std::map<std::string, bool>::iterator itUser1 = this->channelPerm.find(c.getName());
-    Channel *channelPtr = serv->findChannel(c.getName());
+    Channel *channelPtr = serv.findChannel(c.getName());
     if (channelPtr == NULL)
     {
         std::cerr << "Channel " << c.getName() << " not found on server" << std::endl;

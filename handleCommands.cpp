@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 14:26:41 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/03 17:14:09 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/04 09:37:52 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,7 +89,7 @@ bool handle_command(int fd, const std::string &line,
         }
         return (true);
     }
-    else if (cmd == "/join" || cmd == "JOIN")
+    /* else if (cmd == "/join" || cmd == "JOIN")
     {
         std::string channel;
         iss >> channel;
@@ -104,7 +104,11 @@ bool handle_command(int fd, const std::string &line,
             outbuf[fd].append("Internal error: user not found\r\n");
             return true;
         }
-        u->joinChannel(channel);
+        std::cout << channel << std::endl;
+        if (u->getUsername().empty())
+            u->setUsername("user");
+        outbuf[fd].append(":"+u->getNickname() + "!" + u->getUsername() + "@" + "10.12.6.3" + " JOIN :" + channel);
+        u->joinChannel(channel, serv);
         // Ensure outbuf exists and mark fd for POLLOUT so the client receives JOIN/MODE replies
         (void)outbuf[fd];
         for (size_t k = 1; k < pfds.size(); ++k)
@@ -116,7 +120,7 @@ bool handle_command(int fd, const std::string &line,
             }
         }
         return true;
-    }
+    } */
     outbuf[fd].append(std::string("Unknown command: ") + cmd + "\r\n");
     return true;
 }

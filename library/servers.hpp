@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:28 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/03 17:23:00 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/03 17:44:42 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,7 @@ class User
         bool        isOperator;
         int         fd;
         std::map<std::string, bool> channelPerm;
-        Server  *serv;
+        // Server  *serv;
         std::vector<std::string> messages;
         int   maxChannel; // has to be initialised to 9
 
@@ -52,7 +52,6 @@ class User
         void        setUsername(std::string username);
         std::string getUsername() const;
         std::string getNickname() const;
-        void        setServ(Server *s) {serv = s;}
         int         getFd();
         void        setFd(int fd);
 
@@ -65,10 +64,10 @@ class User
         
         /* TBF: to be fixed(?) */
         void    makeOperator(User &user, std::string channel);
-        void    joinChannel(std::string channel);
-        void    kick(User &u, std::string channel);
+        void    joinChannel(std::string channel, Server &serv);
+        void    kick(User &u, std::string channel, Server &serv);
         
-        void        setTopic(Channel &c, const std::string &t);
+        void        setTopic(Channel &c, const std::string &t, Server &serv);
         void        setLimit(Channel &c, int l);
         void        setPw(Channel &c, const std::string &pw);
 };

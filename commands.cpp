@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 12:07:03 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/03 17:22:28 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/03 17:45:07 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,17 +16,8 @@
  * fa entrare lo user nel canale se esiste, se no lo crea e rende lo user operatore
  * se l'utente e' gia' in 10 canali non fa entrare.
  */
-void    User::joinChannel(std::string channel)
+void    User::joinChannel(std::string channel, Server &serv)
 {
-    // 1. controlli base
-    // controlla che sia connesso ad una istanza server
-    if (serv == NULL)
-    {
-        std::cerr << "Error: User is not connected to a server" << std::endl;
-        return;
-    }
-
-    
     //controlla se e' gia nel canale
     if (this->channelPerm.count(channel))
     {
@@ -41,8 +32,8 @@ void    User::joinChannel(std::string channel)
         return ;
     }
     
-    std::vector<Channel> &channels = serv->getChannel();
-    Channel *it = serv->findChannel(channel);
+    std::vector<Channel> &channels = serv.getChannel();
+    Channel *it = serv.findChannel(channel);
     bool created = false;
     
     if (it == NULL)
@@ -93,7 +84,7 @@ void    User::joinChannel(std::string channel)
         std::string joinMsg = ":" + nick + "!" + user + "@" + host + " JOIN " + channel + "\r\n";
 
         // append to server out buffer for this fd
-        std::string out = serv->getOutbuf(fd);
+        std::string out = serv.getOutbuf(fd);
         out.append(joinMsg);
 
         // If the user created the channel, grant operator mode notification so client shows ops
@@ -104,18 +95,13 @@ void    User::joinChannel(std::string channel)
             out.append(modeMsg);
         }
 
-        serv->setOutbuf(fd, out);
+        serv.setOutbuf(fd, out);
     }
 }
 
-void    User::kick(User &u, std::string channel)
+void    User::kick(User &u, std::string channel, Server &serv)
 {
-    if (serv == NULL)
-    {
-        return;
-    }
-    
-    Channel *found = serv->findChannel(channel);
+    Channel *found = serv.findChannel(channel);
 
     if (!found)
     {

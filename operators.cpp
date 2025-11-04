@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 10:06:12 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/03 17:22:33 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/03 17:44:19 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,17 +18,7 @@
 */
 void    User::makeOperator(User &u, std::string channel)
 {
-    if (this->serv == NULL)
-    {
-        std::cerr << "no server for " + this->nickname << std::endl;
-        return;
-    }
-    if (u.serv == NULL)
-    {
-        std::cerr << "no server for " + u.nickname << std::endl;
-        return;
-    }
-    
+  
     std::map<std::string, bool>::iterator itUser1 = this->channelPerm.find(channel);
     std::map<std::string, bool>::iterator itUser2 = u.channelPerm.find(channel);
 
