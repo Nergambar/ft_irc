@@ -6,11 +6,30 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 11:35:35 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/03 16:20:07 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/06 10:49:58 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "library/irc.hpp"
+
+void    checkUser(Server &serv, std::string &newUser, int fd, std::map<int,std::string> &outbuf, std::vector<pollfd> &pfds)
+{
+    User    *user = serv.getUser(fd);
+    if (!user)
+        return;
+
+    newUser = newUser.substr(5, newUser.size() - 5);
+    std::string oldUser = user->getUsername();
+    user->setUsername(newUser);
+    outbuf[fd].append("Username changed: You are now " + newUser + "\r\n");
+    std::string join_msg = newUser + " joined the chat.\r\n";
+        for (size_t k = 1; k < pfds.size(); ++k) {
+            if (pfds[k].fd != fd) {
+                outbuf[pfds[k].fd].append(join_msg);
+                pfds[k].events |= POLLOUT;
+            }
+        }
+}
 
 void    checkNick(std::map<int, std::string> &client_name, std::string &newNick, int fd, std::map<int, std::string> &outbuf,
         std::vector<pollfd> &pfds)
@@ -29,19 +48,18 @@ void    checkNick(std::map<int, std::string> &client_name, std::string &newNick,
         std::string oldNick = client_name[fd];
         client_name[fd] = newNick;
         outbuf[fd].append("You are now known as " + newNick + ".\r\n");
-        
+        (void)pfds;
         // Broadcast join message now that the nickname is set
-        std::string join_msg = newNick + " joined the chat.\r\n";
+        /* std::string join_msg = newNick + " joined the chat.\r\n";
         for (size_t k = 1; k < pfds.size(); ++k) {
             if (pfds[k].fd != fd) {
                 outbuf[pfds[k].fd].append(join_msg);
                 pfds[k].events |= POLLOUT;
             }
-        }
+        } */
     }
 }
 
-// ...existing code...
 void enterPw(std::string &trimmed, int fd, std::map<int, std::string> &outbuf, std::map<int, bool> &authenticated, std::vector<pollfd> &pfds,
     std::string &password, int i)
 {
@@ -61,7 +79,6 @@ void enterPw(std::string &trimmed, int fd, std::map<int, std::string> &outbuf, s
         outbuf[fd].append("Incorrect password. Try again:\r\n");
     }
 }
-// ...existing code...
 
 
 bool recvLoop(int fd, Server &serv, std::map<int, std::string> &inbuf, std::map<int, std::string> &outbuf,
@@ -115,18 +132,41 @@ bool recvLoop(int fd, Server &serv, std::map<int, std::string> &inbuf, std::map<
                 enterPw(line, fd, outbuf, authenticated, pfds, password, i);
                 pfds[i].events |= POLLOUT;
             }
-            else if (authenticated[fd] && client_name[fd].find("user") == 0)
+            else if (authenticated[fd])
             {
-                if (line.empty())
+                std::string cmdLine = line.substr(0, 4);
+                if (cmdLine == "NICK" && client_name[fd].find("user") == 0)
                 {
-                    outbuf[fd].append("Nickname cannot be empty. Please choose your nickname:\r\n");
+                    if (line.empty())
+                    {
+                        outbuf[fd].append("Nickname cannot be empty. Please choose your nickname:\r\n");
+                    }
+                    else
+                    {
+                        checkNick(client_name, line, fd, outbuf, pfds);
+                    }
                 }
-                else
+                else if (cmdLine == "USER" && serv.getUser(fd)->getUsername().empty())
                 {
-                    checkNick(client_name, line, fd, outbuf, pfds);
+                        if (line.empty())
+                    {
+                        outbuf[fd].append("User cannot be empty. Please choose your nickname:\r\n");
+                    }
+                    else
+                        checkUser(serv, line, fd, outbuf, pfds);
                 }
                 pfds[i].events |= POLLOUT;
             }
+            /* else if (authenticated[fd] && serv.getUser(fd)->getUsername().empty())
+            {
+                if (line.empty())
+                {
+                    outbuf[fd].append("User cannot be empty. Please choose your nickname:\r\n");
+                }
+                else
+                    checkUser(serv, line, fd, outbuf, pfds);
+                pfds[i].events |= POLLOUT;
+            } */
             else
             {
                 // Handle commands

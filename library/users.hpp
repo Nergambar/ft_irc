@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Users.hpp                                          :+:      :+:    :+:   */
+/*   users.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/04 09:48:34 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/04 09:52:39 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/06 10:03:16 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,9 @@
 #include <sstream>      //stringstream
 #include <limits.h>     //INT_MAX e INT_MIN
 #include <poll.h>
+
+class Server;
+class Channel;
 
 class User
 {
