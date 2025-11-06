@@ -114,46 +114,50 @@ int main(int argc, char **argv) {
 
         // ---- 1) Handle new connections: pfds[0] is the listening socket ----
         if (pfds.size() > 0 && (pfds[0].revents & POLLIN)) {
-			struct sockaddr_in cli_addr;
-			socklen_t cli_len = sizeof(cli_addr);
-			int client_fd = accept(server_fd, (struct sockaddr*)&cli_addr, &cli_len);
-			if (client_fd < 0) {
-				perror("accept");
-			}
+            struct sockaddr_in cli_addr;
+            socklen_t cli_len = sizeof(cli_addr);
+            int client_fd = accept(server_fd, (struct sockaddr*)&cli_addr, &cli_len);
+            if (client_fd < 0) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    // no more incoming connections ready
+                    break;
+                }
+                perror("accept");
+                break;
+            }
 
-			if (set_nonblocking(client_fd) < 0) {
-				perror("set_nonblocking(client)");
-				close(client_fd);
-				continue;
-			}
+            if (set_nonblocking(client_fd) < 0) {
+                perror("set_nonblocking(client)");
+                close(client_fd);
+                continue;
+            }
 
-			// Add to pfds vector
-			struct pollfd np;
-			np.fd = client_fd;
-			User u;
-			serv.setUser(u, client_fd);
-			np.events = POLLIN; // Initially interested in reading
-			np.revents = 0;
-			pfds.push_back(np);
+            // Add to pfds vector
+            struct pollfd np;
+            np.fd = client_fd;
+            np.events = POLLIN; // Initially interested in reading
+            np.revents = 0;
+            pfds.push_back(np);
 
-			// Initialize buffers and client info
-			std::string s = "";
-			serv.setInbuf(client_fd, s);
-			serv.setOutbuf(client_fd, s);
-			
-			char ipbuf[INET_ADDRSTRLEN];
-			inet_ntop(AF_INET, &(cli_addr.sin_addr), ipbuf, INET_ADDRSTRLEN);
-			
-			serv.setClientName(u);
-			// std::ostringstream name_os;
-			// name_os << "user" << client_fd;
-			// client_name[client_fd] = name_os.str();
-			
-			authenticated[client_fd] = password.empty();
+            // Allocate User on the heap so Server can store a valid pointer
+            User *u = new User();
+            serv.setUser(*u, client_fd);
 
-			std::cout << "Accepted client fd=" << client_fd
-						<< " ip=" << ipbuf
-						<< " port=" << ntohs(cli_addr.sin_port) << std::endl;
+            // Initialize buffers and client info
+            std::string empty = "";
+            serv.setInbuf(client_fd, empty);
+            serv.setOutbuf(client_fd, empty);
+
+            char ipbuf[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &(cli_addr.sin_addr), ipbuf, INET_ADDRSTRLEN);
+
+            serv.setClientName(*u);
+
+            authenticated[client_fd] = password.empty();
+
+            std::cout << "Accepted client fd=" << client_fd
+                        << " ip=" << ipbuf
+                        << " port=" << ntohs(cli_addr.sin_port) << std::endl;
             pfds[0].revents = 0;
         }
 
@@ -167,6 +171,8 @@ int main(int argc, char **argv) {
             // Error or hangup: Close client
             if (rev & (POLLERR | POLLHUP | POLLNVAL)) {
                 closeClient(client_name, fd, pfds, outbuf, inbuf, rev, i);
+                pfds.erase(pfds.begin() + i);
+                --i;
                 continue;
             }
 

@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 11:35:35 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/06 10:49:58 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/06 15:47:51 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,7 @@ void    checkUser(Server &serv, std::string &newUser, int fd, std::map<int,std::
     newUser = newUser.substr(5, newUser.size() - 5);
     std::string oldUser = user->getUsername();
     user->setUsername(newUser);
-    outbuf[fd].append("Username changed: You are now " + newUser + "\r\n");
+    outbuf[fd].append("You are now " + newUser + "\r\n");
     std::string join_msg = newUser + " joined the chat.\r\n";
         for (size_t k = 1; k < pfds.size(); ++k) {
             if (pfds[k].fd != fd) {
