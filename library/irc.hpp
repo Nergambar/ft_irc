@@ -1,14 +1,14 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   irc.hpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:41 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/03 15:53:55 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/06 16:45:12 by scarlucc         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
 #ifndef IRC_HPP
 #define IRC_HPP
@@ -67,6 +67,6 @@ void    readyForWrite(std::map<int, std::string> &client_name, int fd, std::vect
         std::map<int, std::string> &outbuf, std::map<int, std::string> &inbuf, int i);
 
 
-std::vector<std::string> ft_split(std::string str);
+std::vector<std::string> ft_split(std::string str, char c);
 
 #endif

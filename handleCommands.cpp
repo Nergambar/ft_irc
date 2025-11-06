@@ -1,14 +1,14 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   handleCommands.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 14:26:41 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/04 10:25:26 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/06 16:44:51 by scarlucc         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
 #include "library/irc.hpp"
 
@@ -61,7 +61,8 @@ bool handle_command(int fd, const std::string &line,
                     std::vector<struct pollfd> &pfds,
                     Server  &serv)
 {
-    std::vector<std::string> split = ft_split(line);
+    char c = ' ';
+	std::vector<std::string> split = ft_split(line, c);
     (void)serv;
 
     if (split[0] != "JOIN" && split[0] != "NICK" && split[0] != "PASS")

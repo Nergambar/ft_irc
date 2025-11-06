@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
     std::cout << "Chat Server listening on port " << port << std::endl;
     
     // Vector of pollfd: index 0 -> server_fd, the others -> clients
-    std::vector<struct pollfd> pfds;
+    std::vector<struct pollfd> pfds;//forse causa loop infinito e' mancata cancellazione
     struct pollfd p;
     p.fd = server_fd;
     p.events = POLLIN; // Wait for new connections
@@ -186,6 +186,8 @@ int main(int argc, char **argv) {
                     std::string disconn_msg = client_name[fd] + " left the chat.\r\n";
                     for (size_t k = 1; k < pfds.size(); ++k) {
                         if (pfds[k].fd != fd) {
+							//notifica a tutti i client che un client ha lasciato il server
+							//cambiare con quel
                             outbuf[pfds[k].fd].append(disconn_msg);
                             pfds[k].events |= POLLOUT;
                         }

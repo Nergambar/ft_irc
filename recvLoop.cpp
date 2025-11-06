@@ -1,14 +1,14 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   recvLoop.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 11:35:35 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/06 15:47:51 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/06 17:28:46 by scarlucc         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
 #include "library/irc.hpp"
 
@@ -110,7 +110,7 @@ bool recvLoop(int fd, Server &serv, std::map<int, std::string> &inbuf, std::map<
         inbuf[fd].append(received);
 
         size_t pos;
-        while ((pos = inbuf[fd].find('\n')) != std::string::npos)
+        if ((pos = inbuf[fd].find('\n')) != std::string::npos)//finche' a capo esiste nella stringa
         {
             std::string line = inbuf[fd].substr(0, pos + 1);
             inbuf[fd].erase(0, pos + 1);
@@ -122,12 +122,14 @@ bool recvLoop(int fd, Server &serv, std::map<int, std::string> &inbuf, std::map<
             }
 
             if (line.empty())
-                continue;
+                //continue;
+				return closed;
             if (line == "CAP LS 302")
-                continue;
+                //continue;
+				return closed;
 
             // === Authentication & nickname logic ===
-            if (!authenticated[fd])
+            if (!authenticated[fd])//cambiare questa logica
             {
                 enterPw(line, fd, outbuf, authenticated, pfds, password, i);
                 pfds[i].events |= POLLOUT;
@@ -160,7 +162,24 @@ bool recvLoop(int fd, Server &serv, std::map<int, std::string> &inbuf, std::map<
             /* else if (authenticated[fd] && serv.getUser(fd)->getUsername().empty())
             {
                 if (line.empty())
-                {
+                { if (pfds.size() > 0 && (pfds[0].revents & POLLIN)) {
+			struct sockaddr_in cli_addr;
+			socklen_t cli_len = sizeof(cli_addr);
+			int client_fd = accept(server_fd, (struct sockaddr*)&cli_addr, &cli_len);
+			if (client_fd < 0) {
+				perror("accept");
+			}
+
+			if (set_nonblocking(client_fd) < 0) {
+				perror("set_nonblocking(client)");
+				close(client_fd);
+				continue;
+			}
+
+			// Add to pfds vector
+			struct pollfd np;
+			np.fd = client_fd;
+			User u;
                     outbuf[fd].append("User cannot be empty. Please choose your nickname:\r\n");
                 }
                 else
@@ -198,7 +217,9 @@ bool recvLoop(int fd, Server &serv, std::map<int, std::string> &inbuf, std::map<
     }
     else if (n == 0)
     {
-        std::cout << "Client " << client_name[fd] << " fd=" << fd << " disconnected (recv==0)\n";
+        //togliere fd da vettore di pollfd per evitare ciclo infinito
+		//al momento non gestiamo disconnessione
+		std::cout << "Client " << client_name[fd] << " fd=" << fd << " disconnected (recv==0)\n";
         closed = true;
     }
     else
