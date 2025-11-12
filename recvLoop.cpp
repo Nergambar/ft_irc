@@ -1,14 +1,14 @@
-/******************************************************************************/
+/* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   recvLoop.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
+/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 11:35:35 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/06 17:28:46 by scarlucc         ###   ########.fr       */
+/*   Updated: 2025/11/12 09:37:54 by negambar         ###   ########.fr       */
 /*                                                                            */
-/******************************************************************************/
+/* ************************************************************************** */
 
 #include "library/irc.hpp"
 
@@ -129,33 +129,27 @@ bool recvLoop(int fd, Server &serv, std::map<int, std::string> &inbuf, std::map<
 				return closed;
 
             // === Authentication & nickname logic ===
-            if (!authenticated[fd])//cambiare questa logica
+            if (!authenticated[fd])
             {
                 enterPw(line, fd, outbuf, authenticated, pfds, password, i);
                 pfds[i].events |= POLLOUT;
             }
             else if (authenticated[fd])
             {
-                std::string cmdLine = line.substr(0, 4);
-                if (cmdLine == "NICK" && client_name[fd].find("user") == 0)
+                // Unified command handling: let handle_command deal with NICK/PASS/JOIN/etc.
+                if (!handle_command(fd, line, outbuf, client_name, password, pfds, serv))
                 {
-                    if (line.empty())
+                    // Not a recognized command -> broadcast message
+                    std::string msg = "[" + client_name[fd] + "]: " + line + "\r\n";
+                    for (size_t k = 1; k < pfds.size(); ++k)
                     {
-                        outbuf[fd].append("Nickname cannot be empty. Please choose your nickname:\r\n");
+                        if (pfds[k].fd != fd)
+                        {
+                            outbuf[pfds[k].fd].append(msg);
+                            pfds[k].events |= POLLOUT;
+                        }
                     }
-                    else
-                    {
-                        checkNick(client_name, line, fd, outbuf, pfds);
-                    }
-                }
-                else if (cmdLine == "USER" && serv.getUser(fd)->getUsername().empty())
-                {
-                        if (line.empty())
-                    {
-                        outbuf[fd].append("User cannot be empty. Please choose your nickname:\r\n");
-                    }
-                    else
-                        checkUser(serv, line, fd, outbuf, pfds);
+                    outbuf[fd].append("You said: " + line + "\r\n");
                 }
                 pfds[i].events |= POLLOUT;
             }

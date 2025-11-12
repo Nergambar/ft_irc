@@ -1,14 +1,14 @@
-/******************************************************************************/
+/* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   handleCommands.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
+/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 14:26:41 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/06 16:44:51 by scarlucc         ###   ########.fr       */
+/*   Updated: 2025/11/12 11:05:13 by negambar         ###   ########.fr       */
 /*                                                                            */
-/******************************************************************************/
+/* ************************************************************************** */
 
 #include "library/irc.hpp"
 
@@ -39,6 +39,7 @@ int setNick(std::map<int, std::string> &outbuf, int fd, std::istringstream &iss,
             }
             else
                 old = client[fd];
+            std::string oldNick = client[fd];
             client[fd] = newNick;
             std::string msg = old + " is now " + newNick + "\r\n";
             for (size_t k = 1; k < pfds.size(); ++k){
@@ -47,6 +48,7 @@ int setNick(std::map<int, std::string> &outbuf, int fd, std::istringstream &iss,
                     pfds[k].events |= POLLOUT;
                 }
             }
+            // outbuf[fd].append(":" + oldNick + " NICK :" + newNick);
             outbuf[fd].append("You are now "+ newNick + "\r\n");
         }
     }
@@ -62,10 +64,10 @@ bool handle_command(int fd, const std::string &line,
                     Server  &serv)
 {
     char c = ' ';
-	std::vector<std::string> split = ft_split(line, c);
+	std::vector<std::string> split = split2(line, c, line.find(':'));
     (void)serv;
 
-    if (split[0] != "JOIN" && split[0] != "NICK" && split[0] != "PASS")
+    if (split[0] != "JOIN" && split[0] != "NICK" && split[0] != "PASS" && split[0] != "USER")
         return (false);
     std::istringstream iss(line);
     std::string cmd;
@@ -135,7 +137,15 @@ bool handle_command(int fd, const std::string &line,
         }
         return true;
     } */
-    // else if (cmd == "USER")
-    outbuf[fd].append(std::string("Unknown command: ") + cmd + "\r\n");
-    return false;
+    else if (cmd == "USER")
+    {
+        std::string user_line = line;
+        checkUser(serv, user_line, fd, outbuf, pfds);
+        
+        return (true);
+    }
+    if (cmd != "NICK" && cmd != "PASS" && cmd != "USER") // Add all recognized commands here
+        outbuf[fd].append(std::string("Unknown command: ") + cmd + "\r\n");
+
+    return (cmd == "NICK" || cmd == "PASS" || cmd == "USER");
 }

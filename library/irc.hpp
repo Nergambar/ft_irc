@@ -1,14 +1,14 @@
-/******************************************************************************/
+/* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   irc.hpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
+/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:41 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/06 16:45:12 by scarlucc         ###   ########.fr       */
+/*   Updated: 2025/11/12 11:04:42 by negambar         ###   ########.fr       */
 /*                                                                            */
-/******************************************************************************/
+/* ************************************************************************** */
 
 #ifndef IRC_HPP
 #define IRC_HPP
@@ -66,7 +66,8 @@ void closeClient(std::map<int, std::string> &client_name, int fd, std::vector<po
 void    readyForWrite(std::map<int, std::string> &client_name, int fd, std::vector<pollfd> &pfds,
         std::map<int, std::string> &outbuf, std::map<int, std::string> &inbuf, int i);
 
-
+void    checkUser(Server &serv, std::string &newUser, int fd, std::map<int,std::string> &outbuf, std::vector<pollfd> &pfds);
 std::vector<std::string> ft_split(std::string str, char c);
+std::vector<std::string> split2(std::string str, char c, size_t pos);
 
 #endif
