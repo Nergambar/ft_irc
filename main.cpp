@@ -170,7 +170,9 @@ int main(int argc, char **argv) {
 
             // Error or hangup: Close client
             if (rev & (POLLERR | POLLHUP | POLLNVAL)) {
-                closeClient(client_name, fd, pfds, serv.getOutbuf(fd), serv.inbuf, rev, i);
+                std::string inbuf = serv.getInbuf(fd);
+                std::string outbuf = serv.getOutbuf(fd);
+                serv.closeClient(client_name, fd, pfds, rev, i);
                 pfds.erase(pfds.begin() + i);
                 --i;
                 continue;
@@ -178,7 +180,9 @@ int main(int argc, char **argv) {
 
             // Data available for reading (POLLIN)
             if (rev & POLLIN) {
-                if (recvLoop(fd, serv, serv.inbuf, serv.outbuf, authenticated, password, pfds, client_name, i))
+                std::string inbuf = serv.getInbuf(fd);
+                std::string outbuf = serv.getOutbuf(fd);
+                if (serv.recvLoop(fd, serv, authenticated, password, pfds, client_name, i))
                 {
                     // Close client: Cleanup done in the error/hangup block above
                     // The client will be cleaned up in the loop iteration's POLLERR/POLLHUP check 
@@ -188,7 +192,7 @@ int main(int argc, char **argv) {
                         if (pfds[k].fd != fd) {
 							//notifica a tutti i client che un client ha lasciato il server
 							//cambiare con quel
-                            serv.outbuf[pfds[k].fd].append(disconn_msg);
+                            serv.getOutbuf(pfds[k].fd).append(disconn_msg);
                             pfds[k].events |= POLLOUT;
                         }
                     }
@@ -203,9 +207,11 @@ int main(int argc, char **argv) {
 
             // Socket ready for writing (POLLOUT)
             if (pfds.size() > i && (rev & POLLOUT)) {
-                readyForWrite(client_name, fd, pfds, serv.outbuf, serv.inbuf, i);
+                std::string inbuf = serv.getInbuf(fd);
+                std::string outbuf = serv.getOutbuf(fd);
+                serv.readyForWrite(client_name, fd, pfds, i);
                 // If the buffer is empty, stop asking to write
-                if (pfds.size() > i && serv.outbuf.find(fd) != serv.outbuf.end() && serv.outbuf[fd].empty()) {
+                if (pfds.size() > i && serv.getOutbuf(fd).empty()) {
                     pfds[i].events &= ~POLLOUT;
                 }
             } // end POLLOUT

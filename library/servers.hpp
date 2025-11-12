@@ -1,14 +1,14 @@
-/******************************************************************************/
+/* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   servers.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
+/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:28 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/12 13:03:27 by scarlucc         ###   ########.fr       */
+/*   Updated: 2025/11/12 14:06:38 by negambar         ###   ########.fr       */
 /*                                                                            */
-/******************************************************************************/
+/* ************************************************************************** */
 
 #ifndef SERVERS
 #define SERVERS
@@ -66,6 +66,16 @@ class Server{
         Channel             *findChannel(std::string name);
         User                *getUser(int fd);
         
+        void    readyForWrite(std::map<int, std::string> &client_name, int fd, std::vector<pollfd> &pfds,
+                int i);
+        void closeClient(std::map<int, std::string> &client_name, int fd, std::vector<pollfd> &pfds,
+            short rev, int i);
+        bool recvLoop(int fd, Server &serv, std::map<int, bool> &authenticated, std::string &password, std::vector<pollfd> &pfds,  
+            std::map<int, std::string> &client_name, int i);
+        bool    handle_command(int fd, const std::vector<std::string> &line,
+                    std::map<int,std::string> &client,
+                    std::string       &server_password,
+                    std::vector<struct pollfd> &pfds);
 };
 
 

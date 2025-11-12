@@ -1,14 +1,14 @@
-/******************************************************************************/
+/* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   irc.hpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
+/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:41 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/12 11:39:22 by scarlucc         ###   ########.fr       */
+/*   Updated: 2025/11/12 13:57:39 by negambar         ###   ########.fr       */
 /*                                                                            */
-/******************************************************************************/
+/* ************************************************************************** */
 
 #ifndef IRC_HPP
 #define IRC_HPP
@@ -39,11 +39,6 @@ int     addNickname(std::map<int,std::string>&cp, const std::string &n);
 int     addWithKey(std::map<int, std::string>&copy, int key, const std::string &n);
 
 
-bool recvLoop(int fd, Server &serv, std::map<int, std::string> &inbuf, std::map<int, std::string> &outbuf,
-    std::map<int, bool> &authenticated, std::string &password, std::vector<pollfd> &pfds,  
-    std::map<int, std::string> &client_name, int i);
-
-
 int    handleClient(std::map<int, std::string> &inbuf, std::map<int, std::string> &outbuf,
                     std::map<int, bool> &authenticated, std::string &password, std::vector<pollfd> &pfds, 
                     std::map<int, std::string> &client_name, size_t i);
@@ -52,7 +47,8 @@ int    handleClient(std::map<int, std::string> &inbuf, std::map<int, std::string
 
 bool startswith(const std::string &s, const std::string &s2);
 
-
+void enterPw(std::string &trimmed, int fd, std::map<int, std::string> &outbuf, std::map<int, bool> &authenticated, std::vector<pollfd> &pfds,
+    std::string &password, int i);
 
 bool handle_command(int fd, const std::vector<std::string> &line,
                     std::map<int,std::string> &outbuf,
@@ -60,11 +56,6 @@ bool handle_command(int fd, const std::vector<std::string> &line,
                     std::string       &server_password,
                     std::vector<struct pollfd> &pfds,
                     Server                      &serv);
-void closeClient(std::map<int, std::string> &client_name, int fd, std::vector<pollfd> &pfds,
-        std::map<int, std::string> &outbuf, std::map<int, std::string> &inbuf, short rev, int i);
-
-void    readyForWrite(std::map<int, std::string> &client_name, int fd, std::vector<pollfd> &pfds,
-        std::map<int, std::string> &outbuf, std::map<int, std::string> &inbuf, int i);
 
 void    checkUser(Server &serv, std::string &newUser, int fd, std::map<int,std::string> &outbuf, std::vector<pollfd> &pfds);
 std::vector<std::string> ft_split(std::string str, char c);

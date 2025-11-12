@@ -1,29 +1,29 @@
-/******************************************************************************/
+/* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   servers.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
+/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:30 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/12 13:15:26 by scarlucc         ###   ########.fr       */
+/*   Updated: 2025/11/12 14:00:44 by negambar         ###   ########.fr       */
 /*                                                                            */
-/******************************************************************************/
+/* ************************************************************************** */
 
-#include "library/servers.hpp"
+#include "../library/servers.hpp"
 
 Server::Server(std::string port, std::string psw)
 {
 	this->port = std::atoi(port.c_str());
 	pass = psw;
 	command_map();
-	outbuf;
-	inbuf;
+	// outbuf;
+	// inbuf;
 }
 
 bool	Server::nick(int fd, std::vector<std::string> vect)
 {
-	bool is_taken = false;
+	// bool is_taken = false;
 	std::string nick = this->users[fd]->getNickname();
     for (std::map<int, User *>::iterator it = users.begin(); it != users.end(); ++it)
 	{
@@ -40,6 +40,7 @@ bool	Server::nick(int fd, std::vector<std::string> vect)
     //         break;
     //     }
     // }
+    return (true);
 }
 
 void Server::command_map()
@@ -66,7 +67,7 @@ void Server::command_map()
         outbuf[fd].append("You are now known as " + newNick + ".\r\n");
         (void)pfds;
         // Broadcast join message now that the nickname is set
-        /* std::string join_msg = newNick + " joined the chat.\r\n";
+        std::string join_msg = newNick + " joined the chat.\r\n";
         for (size_t k = 1; k < pfds.size(); ++k) {
             if (pfds[k].fd != fd) {
                 outbuf[pfds[k].fd].append(join_msg);

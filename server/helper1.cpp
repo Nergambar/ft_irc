@@ -1,86 +1,27 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   recvLoop.cpp                                       :+:      :+:    :+:   */
+/*   helper1.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/28 11:35:35 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/12 13:59:51 by negambar         ###   ########.fr       */
+/*   Created: 2025/10/29 11:52:49 by negambar          #+#    #+#             */
+/*   Updated: 2025/11/12 14:10:34 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "library/irc.hpp"
+#include "../library/servers.hpp"
+#include "../library/irc.hpp"
 
-void    checkUser(Server &serv, std::string &newUser, int fd, std::map<int,std::string> &outbuf, std::vector<pollfd> &pfds)
+
+void Server::setClientName(User &u)
 {
-    User    *user = serv.getUser(fd);
-    if (!user)
-        return;
-
-    newUser = newUser.substr(5, newUser.size() - 5);
-    std::string oldUser = user->getUsername();
-    user->setUsername(newUser);
-    outbuf[fd].append("You are now " + newUser + "\r\n");
-    std::string join_msg = newUser + " joined the chat.\r\n";
-        for (size_t k = 1; k < pfds.size(); ++k) {
-            if (pfds[k].fd != fd) {
-                outbuf[pfds[k].fd].append(join_msg);
-                pfds[k].events |= POLLOUT;
-            }
-        }
+    int fd = u.getFd();
+    std::ostringstream name_os;
+    name_os << "user" << fd;
+    u.setNickname(name_os.str());
+    users[fd] = &u;
 }
-
-//ora in server.cpp
-/* void    checkNick(std::map<int, std::string> &client_name, std::string &newNick, int fd, std::map<int, std::string> &outbuf,
-        std::vector<pollfd> &pfds)
-{
-    bool is_taken = false;
-    for (std::map<int, std::string>::iterator it = client_name.begin(); it != client_name.end(); ++it) {
-        if (it->first != fd && it->second == newNick) {
-            is_taken = true;
-            break;
-        }
-    }
-
-    if (is_taken) {
-        outbuf[fd].append("Nickname '"+ newNick + "' is already in use. Please choose another:\r\n");
-    } else {
-        std::string oldNick = client_name[fd];
-        client_name[fd] = newNick;
-        outbuf[fd].append("You are now known as " + newNick + ".\r\n");
-        (void)pfds;
-        // Broadcast join message now that the nickname is set
-        std::string join_msg = newNick + " joined the chat.\r\n";
-        for (size_t k = 1; k < pfds.size(); ++k) {
-            if (pfds[k].fd != fd) {
-                outbuf[pfds[k].fd].append(join_msg);
-                pfds[k].events |= POLLOUT;
-            }
-        }
-    }
-} */
-
-void enterPw(std::string &trimmed, int fd, std::map<int, std::string> &outbuf, std::map<int, bool> &authenticated, std::vector<pollfd> &pfds,
-    std::string &password, int i)
-{
-    // Safely extract the token after "PASS "
-    std::string arg;
-    size_t sp = trimmed.find(' ');
-    if (sp == std::string::npos) {
-        arg = ""; // no password supplied
-    } else {
-        arg = trimmed.substr(sp + 1);
-    }
-
-    if (arg == password) {
-        authenticated[fd] = true;
-        pfds[i].events |= POLLOUT;
-    } else {
-        outbuf[fd].append("Incorrect password. Try again:\r\n");
-    }
-}
-/* 
 
 bool Server::recvLoop(int fd, Server &serv, std::map<int, bool> &authenticated, std::string &password, std::vector<pollfd> &pfds,
               std::map<int, std::string> &client_name, int i)
@@ -139,7 +80,7 @@ bool Server::recvLoop(int fd, Server &serv, std::map<int, bool> &authenticated, 
             else if (authenticated[fd])
             {
                 // Unified command handling: let handle_command deal with NICK/PASS/JOIN/etc.
-                if (!handle_command(fd, line, outbuf, client_name, password, pfds, serv))
+                if (!serv.handle_command(fd, line, client_name, password, pfds))
                 {
                     // Not a recognized command -> broadcast message
                     std::string msg = "[" + client_name[fd] + "]: " + inbuf[fd] + "\r\n";
@@ -155,7 +96,7 @@ bool Server::recvLoop(int fd, Server &serv, std::map<int, bool> &authenticated, 
                 }
                 pfds[i].events |= POLLOUT;
             }
-            else if (authenticated[fd] && serv.getUser(fd)->getUsername().empty())
+            /* else if (authenticated[fd] && serv.getUser(fd)->getUsername().empty())
             {
                 if (line.empty())
                 { if (pfds.size() > 0 && (pfds[0].revents & POLLIN)) {
@@ -181,11 +122,11 @@ bool Server::recvLoop(int fd, Server &serv, std::map<int, bool> &authenticated, 
                 else
                     checkUser(serv, line, fd, outbuf, pfds);
                 pfds[i].events |= POLLOUT;
-            } 
+            } */
             else
             {
                 // Handle commands
-                if (!handle_command(fd, line, outbuf, client_name, password, pfds, serv))
+                if (!handle_command(fd, line, client_name, password, pfds))
                 {
                     // Broadcast message
                     std::string msg = "[" + client_name[fd] + "]: " + inbuf[fd] + "\r\n";
@@ -226,4 +167,89 @@ bool Server::recvLoop(int fd, Server &serv, std::map<int, bool> &authenticated, 
 
     return closed;
 }
- */
+
+/*
+bool Server::handle_command(int fd, const std::vector<std::string> &line,
+                    std::map<int,std::string> &client,
+                    std::string       &server_password,
+                    std::vector<struct pollfd> &pfds)
+{
+    if (line[0] != "JOIN" && line[0] != "NICK" && line[0] != "PASS" && line[0] != "USER")
+        return (false);
+    if (line[0] == "NICK")
+    {
+        if (setNick(outbuf, fd, iss, client, pfds) == 1)
+        {
+            outbuf[fd].append("Nickname is already in use. Please choose another.\r\n");//ERR_NICKCOLLISION
+            return false;
+        }
+        else
+            return (true);
+    }
+    else if (line[0] == "PASS")
+    {
+        std::string newpw;
+        iss >> newpw;
+        if (newpw.empty()) {
+            outbuf[fd].append("Usage: /pass <newpassword>  (use non-empty value to set)\r\n");
+        } else if (newpw == server_password) {
+			outbuf[fd].append("Can't change into the same password as before.\r\n");
+		}
+		else {
+            server_password = newpw;
+            outbuf[fd].append("Server password changed.\r\n");
+            // Notify other clients (optional)
+            std::string notice = "Server password has been changed by " + client[fd] + ".\r\n";
+            for (size_t k = 1; k < pfds.size(); ++k) {
+                if (pfds[k].fd != fd) {
+                    outbuf[pfds[k].fd].append(notice);
+                    pfds[k].events |= POLLOUT;
+                }
+            }
+        }
+        return (true);
+    }
+     else if (cmd == "JOIN")
+    {
+        std::string channel;
+        iss >> channel;
+        if (channel.empty())
+        {
+            outbuf[fd].append("Usage: /join <channel>\r\n");
+            return true;
+        }
+        User *u = serv.getUser(fd);
+        if (!u)
+        {
+            outbuf[fd].append("Internal error: user not found\r\n");
+            return true;
+        }
+        std::cout << channel << std::endl;
+        if (u->getUsername().empty())
+            u->setUsername("user");
+        outbuf[fd].append(":"+u->getNickname() + "!" + u->getUsername() + "@" + "10.12.6.3" + " JOIN :" + channel);
+        u->joinChannel(channel, serv);
+        // Ensure outbuf exists and mark fd for POLLOUT so the client receives JOIN/MODE replies
+        (void)outbuf[fd];
+        for (size_t k = 1; k < pfds.size(); ++k)
+        {
+            if (pfds[k].fd == fd)
+            {
+                pfds[k].events |= POLLOUT;
+                break;
+            }
+        }
+        return true;
+    } 
+    else if (line[0] == "USER")
+    {
+        std::string user_line = line[0];
+        checkUser(serv, user_line, fd, outbuf, pfds);
+        
+        return (true);
+    }
+    if (line[0] != "NICK" && line[0] != "PASS" && line[0] != "USER") // Add all recognized commands here
+        outbuf[fd].append(std::string("Unknown command: ") + line[0] + "\r\n");
+
+    return (line[0] == "NICK" || line[0] == "PASS" || line[0] == "USER");
+}*/
