@@ -1,14 +1,14 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   handleCommands.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 14:26:41 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/12 14:05:21 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/12 17:19:56 by scarlucc         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
 #include "library/irc.hpp"
 
@@ -103,7 +103,7 @@ int setNick(std::map<int, std::string> &outbuf, int fd, std::istringstream &iss,
         }
         return (true);
     }
-    /* else if (cmd == "JOIN")
+    else if (cmd == "JOIN")
     {
         std::string channel;
         iss >> channel;

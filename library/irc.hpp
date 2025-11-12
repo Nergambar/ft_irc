@@ -1,14 +1,14 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   irc.hpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:41 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/12 13:57:39 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/12 16:53:12 by scarlucc         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
 #ifndef IRC_HPP
 #define IRC_HPP
@@ -47,15 +47,8 @@ int    handleClient(std::map<int, std::string> &inbuf, std::map<int, std::string
 
 bool startswith(const std::string &s, const std::string &s2);
 
-void enterPw(std::string &trimmed, int fd, std::map<int, std::string> &outbuf, std::map<int, bool> &authenticated, std::vector<pollfd> &pfds,
+void pass(std::string &trimmed, int fd, std::map<int, std::string> &outbuf, std::map<int, bool> &authenticated, std::vector<pollfd> &pfds,
     std::string &password, int i);
-
-bool handle_command(int fd, const std::vector<std::string> &line,
-                    std::map<int,std::string> &outbuf,
-                    std::map<int,std::string> &client,
-                    std::string       &server_password,
-                    std::vector<struct pollfd> &pfds,
-                    Server                      &serv);
 
 void    checkUser(Server &serv, std::string &newUser, int fd, std::map<int,std::string> &outbuf, std::vector<pollfd> &pfds);
 std::vector<std::string> ft_split(std::string str, char c);

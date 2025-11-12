@@ -1,14 +1,14 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   helper1.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/29 11:52:49 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/12 14:10:34 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/12 17:18:45 by scarlucc         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
 #include "../library/servers.hpp"
 #include "../library/irc.hpp"
@@ -23,8 +23,7 @@ void Server::setClientName(User &u)
     users[fd] = &u;
 }
 
-bool Server::recvLoop(int fd, Server &serv, std::map<int, bool> &authenticated, std::string &password, std::vector<pollfd> &pfds,
-              std::map<int, std::string> &client_name, int i)
+bool Server::recvLoop(int fd, std::map<int, std::string> &client_name, int i)
 {
     bool closed = false;
     char buf[4096];
@@ -72,16 +71,16 @@ bool Server::recvLoop(int fd, Server &serv, std::map<int, bool> &authenticated, 
 				return closed;
 
             // === Authentication & nickname logic ===
-            if (!authenticated[fd])
+            /* if (!authenticated[fd]) //gestito in pass()
             {
-                enterPw(line[1], fd, outbuf, authenticated, pfds, password, i);
+                pass(fd, line);
                 pfds[i].events |= POLLOUT;
-            }
+            } 
             else if (authenticated[fd])
-            {
+            {*/
                 // Unified command handling: let handle_command deal with NICK/PASS/JOIN/etc.
-                if (!serv.handle_command(fd, line, client_name, password, pfds))
-                {
+                /* if (!serv.handle_command(fd, line, client_name, password, pfds))
+                { */
                     // Not a recognized command -> broadcast message
                     std::string msg = "[" + client_name[fd] + "]: " + inbuf[fd] + "\r\n";
                     for (size_t k = 1; k < pfds.size(); ++k)
@@ -93,9 +92,9 @@ bool Server::recvLoop(int fd, Server &serv, std::map<int, bool> &authenticated, 
                         }
                     }
                     outbuf[fd].append("You said: " + inbuf[fd] + "\r\n");
-                }
+                //}
                 pfds[i].events |= POLLOUT;
-            }
+            //}
             /* else if (authenticated[fd] && serv.getUser(fd)->getUsername().empty())
             {
                 if (line.empty())
@@ -122,11 +121,11 @@ bool Server::recvLoop(int fd, Server &serv, std::map<int, bool> &authenticated, 
                 else
                     checkUser(serv, line, fd, outbuf, pfds);
                 pfds[i].events |= POLLOUT;
-            } */
-            else
+            } 
+            else*/
             {
                 // Handle commands
-                if (!handle_command(fd, line, client_name, password, pfds))
+                if (!handle_command(fd, line))
                 {
                     // Broadcast message
                     std::string msg = "[" + client_name[fd] + "]: " + inbuf[fd] + "\r\n";
@@ -167,6 +166,22 @@ bool Server::recvLoop(int fd, Server &serv, std::map<int, bool> &authenticated, 
 
     return closed;
 }
+
+bool Server::handle_command(int fd, const std::vector<std::string> &line)
+{
+	if (commands.find(line[0]) != commands.end())
+	{
+		return (this->*(commands[line[0]]))(fd, line);
+	}
+	else
+	{
+		std::string tmp = "temporary error: " + line[0] + "comando sconosciuto";
+		setOutbuf(fd, tmp);
+		return (false);
+	}
+	return (false); //forse cambiare	
+}
+
 
 /*
 bool Server::handle_command(int fd, const std::vector<std::string> &line,

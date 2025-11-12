@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
     std::cout << "Chat Server listening on port " << port << std::endl;
     
     // Vector of pollfd: index 0 -> server_fd, the others -> clients
-    std::vector<struct pollfd> pfds;//forse causa loop infinito e' mancata cancellazione
+    std::vector<struct pollfd> pfds = serv.getPfds();//forse causa loop infinito e' mancata cancellazione
     struct pollfd p;
     p.fd = server_fd;
     p.events = POLLIN; // Wait for new connections
@@ -182,7 +182,7 @@ int main(int argc, char **argv) {
             if (rev & POLLIN) {
                 std::string inbuf = serv.getInbuf(fd);
                 std::string outbuf = serv.getOutbuf(fd);
-                if (serv.recvLoop(fd, serv, authenticated, password, pfds, client_name, i))
+                if (serv.recvLoop(fd, client_name, i))
                 {
                     // Close client: Cleanup done in the error/hangup block above
                     // The client will be cleaned up in the loop iteration's POLLERR/POLLHUP check 

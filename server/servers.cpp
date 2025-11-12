@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:30 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/12 14:00:44 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/12 16:35:34 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 Server::Server(std::string port, std::string psw)
 {
 	this->port = std::atoi(port.c_str());
-	pass = psw;
+	password = psw;
 	command_map();
 	// outbuf;
 	// inbuf;
@@ -46,6 +46,8 @@ bool	Server::nick(int fd, std::vector<std::string> vect)
 void Server::command_map()
 {
 	commands["NICK"] = &Server::nick;
+	commands["PASS"] = &Server::pass;
+	commands["USER"] = &Server::user;
 }
 
 /* void    checkNick(std::map<int, std::string> &client_name, std::string &newNick, int fd, std::map<int, std::string> &outbuf,

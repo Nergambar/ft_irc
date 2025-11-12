@@ -1,14 +1,14 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   users.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/04 09:48:34 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/06 10:03:16 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/12 15:12:01 by scarlucc         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
 #include <iostream>
 #include <map>
@@ -37,8 +37,8 @@ class User
         std::string hostName;
         bool        isOperator;
         int         fd;
+        bool        authenticated;
         std::map<std::string, bool> channelPerm;
-        // Server  *serv;
         std::vector<std::string> messages;
         int   maxChannel; // has to be initialised to 9
 
@@ -51,6 +51,8 @@ class User
         std::string getNickname() const;
         int         getFd();
         void        setFd(int fd);
+        bool        getAuth() {return (authenticated);}
+        void        setAuth(bool val) {authenticated = val;}
 
         
         /* testing functions */

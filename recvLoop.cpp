@@ -1,34 +1,36 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   recvLoop.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 11:35:35 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/12 13:59:51 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/12 15:53:03:02 by scarlucc         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
-#include "library/irc.hpp"
+  #include "library/irc.hpp"
 
-void    checkUser(Server &serv, std::string &newUser, int fd, std::map<int,std::string> &outbuf, std::vector<pollfd> &pfds)
+bool    Server::user(int fd, std::vector<std::string> cmd)
 {
-    User    *user = serv.getUser(fd);
-    if (!user)
-        return;
+	std::string newUser = cmd[1];
+    User    *user_obj = getUser(fd);
+    if (!user_obj)
+        return false;//utente viene registrato quando si collega con nome temporaneo
 
-    newUser = newUser.substr(5, newUser.size() - 5);
-    std::string oldUser = user->getUsername();
-    user->setUsername(newUser);
-    outbuf[fd].append("You are now " + newUser + "\r\n");
+    std::string oldUser = user_obj->getUsername();
+    user_obj->setUsername(newUser);
+	std::string tmp = "You are now " + newUser + "\r\n";
+    setOutbuf(fd, tmp);
     std::string join_msg = newUser + " joined the chat.\r\n";
-        for (size_t k = 1; k < pfds.size(); ++k) {
-            if (pfds[k].fd != fd) {
-                outbuf[pfds[k].fd].append(join_msg);
-                pfds[k].events |= POLLOUT;
-            }
-        }
+	for (size_t k = 1; k < pfds.size(); ++k) {
+		if (pfds[k].fd != fd) {
+			setOutbuf(pfds[k].fd, join_msg);
+			pfds[k].events |= POLLOUT;
+		}
+	}
+	return (true);
 }
 
 //ora in server.cpp
@@ -61,7 +63,34 @@ void    checkUser(Server &serv, std::string &newUser, int fd, std::map<int,std::
     }
 } */
 
-void enterPw(std::string &trimmed, int fd, std::map<int, std::string> &outbuf, std::map<int, bool> &authenticated, std::vector<pollfd> &pfds,
+bool Server::pass(int fd, std::vector<std::string> cmd)
+{
+    std::string arg;
+    if (cmd[1].empty())
+        arg = "";
+    else
+        arg = cmd[1];
+    if (arg == password)
+    {
+        users[fd]->setAuth(true);
+		pollfd* p = getPollfd(fd);
+		if (p)
+		    p->events |= POLLOUT;
+    }
+    else
+    {
+        outbuf[fd].append("Incorrect password. Try again:\r\n");
+        pollfd* p = getPollfd(fd);
+        if (p)
+            p->events |= POLLOUT;
+		return (false);
+    }
+    return(true);
+}
+
+/* 
+
+bool passVecchia(std::string &trimmed, int fd, std::map<int, std::string> &outbuf, std::map<int, bool> &authenticated, std::vector<pollfd> &pfds,
     std::string &password, int i)
 {
     // Safely extract the token after "PASS "
@@ -80,7 +109,6 @@ void enterPw(std::string &trimmed, int fd, std::map<int, std::string> &outbuf, s
         outbuf[fd].append("Incorrect password. Try again:\r\n");
     }
 }
-/* 
 
 bool Server::recvLoop(int fd, Server &serv, std::map<int, bool> &authenticated, std::string &password, std::vector<pollfd> &pfds,
               std::map<int, std::string> &client_name, int i)
@@ -133,7 +161,7 @@ bool Server::recvLoop(int fd, Server &serv, std::map<int, bool> &authenticated, 
             // === Authentication & nickname logic ===
             if (!authenticated[fd])
             {
-                enterPw(line[1], fd, outbuf, authenticated, pfds, password, i);
+                pass(line[1], fd, outbuf, authenticated, pfds, password, i);
                 pfds[i].events |= POLLOUT;
             }
             else if (authenticated[fd])
