@@ -1,14 +1,14 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   recvLoop.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 11:35:35 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/12 09:37:54 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/12 12:12:52 by scarlucc         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
 #include "library/irc.hpp"
 
@@ -31,7 +31,8 @@ void    checkUser(Server &serv, std::string &newUser, int fd, std::map<int,std::
         }
 }
 
-void    checkNick(std::map<int, std::string> &client_name, std::string &newNick, int fd, std::map<int, std::string> &outbuf,
+//ora in server.cpp
+/* void    checkNick(std::map<int, std::string> &client_name, std::string &newNick, int fd, std::map<int, std::string> &outbuf,
         std::vector<pollfd> &pfds)
 {
     bool is_taken = false;
@@ -58,7 +59,7 @@ void    checkNick(std::map<int, std::string> &client_name, std::string &newNick,
             }
         } */
     }
-}
+} */
 
 void enterPw(std::string &trimmed, int fd, std::map<int, std::string> &outbuf, std::map<int, bool> &authenticated, std::vector<pollfd> &pfds,
     std::string &password, int i)
@@ -112,26 +113,28 @@ bool recvLoop(int fd, Server &serv, std::map<int, std::string> &inbuf, std::map<
         size_t pos;
         if ((pos = inbuf[fd].find('\n')) != std::string::npos)//finche' a capo esiste nella stringa
         {
-            std::string line = inbuf[fd].substr(0, pos + 1);
+            //std::string line = inbuf[fd].substr(0, pos + 1);
+			std::vector<std::string> line = split2(inbuf[fd], ' ', inbuf[fd].find(':'));
             inbuf[fd].erase(0, pos + 1);
 
             // Trim trailing CR/LF safely
-            while (!line.empty() && (line[line.size() - 1] == '\n' || line[line.size() - 1] == '\r'))
-            {
-                line.resize(line.size() -1);
-            }
+			// std::string lastLine = line[line.size() - 1];
+            // while (!line.empty() && ((lastLine.end() - 1) == '\n' || (lastLine.end() - 1) == '\r'))
+            // {
+            //     line.resize(line.size() -1);
+            // }
 
             if (line.empty())
                 //continue;
 				return closed;
-            if (line == "CAP LS 302")
+            if (line[0] == "CAP")
                 //continue;
 				return closed;
 
             // === Authentication & nickname logic ===
             if (!authenticated[fd])
             {
-                enterPw(line, fd, outbuf, authenticated, pfds, password, i);
+                enterPw(line[1], fd, outbuf, authenticated, pfds, password, i);
                 pfds[i].events |= POLLOUT;
             }
             else if (authenticated[fd])

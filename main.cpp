@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
     if (server_fd < 0) return 1;
     
     std::string password = argv[2];
-    Server serv;
+    Server serv(argv[1], argv[2]);
     
     std::cout << "Chat Server listening on port " << port << std::endl;
     
@@ -96,8 +96,8 @@ int main(int argc, char **argv) {
     pfds.push_back(p);
 
     // Buffers for each client (in and out)
-    std::map<int, std::string> inbuf;
-    std::map<int, std::string> outbuf;
+    // std::map<int, std::string> serv.inbuf;
+    // std::map<int, std::string> serv.outbuf;
     
     std::map<int, std::string> client_name; // Simple map to store client 'name' (fd in this case)
 
@@ -170,7 +170,7 @@ int main(int argc, char **argv) {
 
             // Error or hangup: Close client
             if (rev & (POLLERR | POLLHUP | POLLNVAL)) {
-                closeClient(client_name, fd, pfds, outbuf, inbuf, rev, i);
+                closeClient(client_name, fd, pfds, serv.getOutbuf(fd), serv.inbuf, rev, i);
                 pfds.erase(pfds.begin() + i);
                 --i;
                 continue;
@@ -178,7 +178,7 @@ int main(int argc, char **argv) {
 
             // Data available for reading (POLLIN)
             if (rev & POLLIN) {
-                if (recvLoop(fd, serv, inbuf, outbuf, authenticated, password, pfds, client_name, i))
+                if (recvLoop(fd, serv, serv.inbuf, serv.outbuf, authenticated, password, pfds, client_name, i))
                 {
                     // Close client: Cleanup done in the error/hangup block above
                     // The client will be cleaned up in the loop iteration's POLLERR/POLLHUP check 
@@ -188,7 +188,7 @@ int main(int argc, char **argv) {
                         if (pfds[k].fd != fd) {
 							//notifica a tutti i client che un client ha lasciato il server
 							//cambiare con quel
-                            outbuf[pfds[k].fd].append(disconn_msg);
+                            serv.outbuf[pfds[k].fd].append(disconn_msg);
                             pfds[k].events |= POLLOUT;
                         }
                     }
@@ -203,9 +203,9 @@ int main(int argc, char **argv) {
 
             // Socket ready for writing (POLLOUT)
             if (pfds.size() > i && (rev & POLLOUT)) {
-                readyForWrite(client_name, fd, pfds, outbuf, inbuf, i);
+                readyForWrite(client_name, fd, pfds, serv.outbuf, serv.inbuf, i);
                 // If the buffer is empty, stop asking to write
-                if (pfds.size() > i && outbuf.find(fd) != outbuf.end() && outbuf[fd].empty()) {
+                if (pfds.size() > i && serv.outbuf.find(fd) != serv.outbuf.end() && serv.outbuf[fd].empty()) {
                     pfds[i].events &= ~POLLOUT;
                 }
             } // end POLLOUT

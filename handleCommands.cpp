@@ -1,23 +1,24 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   handleCommands.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 14:26:41 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/12 11:05:13 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/12 12:11:58 by scarlucc         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
 #include "library/irc.hpp"
 
-int setNick(std::map<int, std::string> &outbuf, int fd, std::istringstream &iss, std::map<int, std::string> &client, std::vector<pollfd> &pfds)
+//ora in server.cpp
+/* int setNick(std::map<int, std::string> &outbuf, int fd, std::string &iss, std::map<int, std::string> &client, std::vector<pollfd> &pfds)
 {
     std::string newNick;
     std::ostringstream ss;
     ss << fd;
-    iss >> newNick;
+    newNick = iss;
     bool is_taken = false;
     for (std::map<int, std::string>::iterator it = client.begin(); it != client.end(); ++it) {
         if (it->first != fd && it->second == newNick) {
@@ -53,10 +54,10 @@ int setNick(std::map<int, std::string> &outbuf, int fd, std::istringstream &iss,
         }
     }
     return (0);
-}
+} */
 
 
-bool handle_command(int fd, const std::string &line,
+bool handle_command(int fd, const std::vector<std::string> &line,
                     std::map<int,std::string> &outbuf,
                     std::map<int,std::string> &client,
                     std::string       &server_password,
@@ -64,17 +65,17 @@ bool handle_command(int fd, const std::string &line,
                     Server  &serv)
 {
     char c = ' ';
-	std::vector<std::string> split = split2(line, c, line.find(':'));
+	//std::vector<std::string> split = split2(line, c, line.find(':'));
     (void)serv;
 
-    if (split[0] != "JOIN" && split[0] != "NICK" && split[0] != "PASS" && split[0] != "USER")
+    if (line[0] != "JOIN" && line[0] != "NICK" && line[0] != "PASS" && line[0] != "USER")
         return (false);
-    std::istringstream iss(line);
-    std::string cmd;
-    iss >> cmd;
-    if (cmd == "NICK")
+    // std::istringstream iss(line);
+    // std::string cmd;
+    // iss >> cmd;
+    if (line[0] == "NICK")
     {
-        if (setNick(outbuf, fd, iss, client, pfds) == 1)
+        if (setNick(outbuf, fd, line[1], client, pfds) == 1)
         {
             outbuf[fd].append("Nickname is already in use. Please choose another.\r\n");//ERR_NICKCOLLISION
             return false;
@@ -82,7 +83,7 @@ bool handle_command(int fd, const std::string &line,
         else
             return (true);
     }
-    else if (cmd == "PASS")
+    else if (line[0] == "PASS")
     {
         std::string newpw;
         iss >> newpw;

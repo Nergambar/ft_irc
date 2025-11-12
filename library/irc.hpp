@@ -1,14 +1,14 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   irc.hpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:41 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/12 11:04:42 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/12 11:39:22 by scarlucc         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
 #ifndef IRC_HPP
 #define IRC_HPP
@@ -54,7 +54,7 @@ bool startswith(const std::string &s, const std::string &s2);
 
 
 
-bool handle_command(int fd, const std::string &line,
+bool handle_command(int fd, const std::vector<std::string> &line,
                     std::map<int,std::string> &outbuf,
                     std::map<int,std::string> &client,
                     std::string       &server_password,

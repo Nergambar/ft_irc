@@ -1,14 +1,14 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   servers.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:28 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/04 09:53:11 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/12 13:03:27 by scarlucc         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
 #ifndef SERVERS
 #define SERVERS
@@ -38,7 +38,12 @@ class Server{
         std::map<int, std::string> outbuf;
         std::vector<Channel> allChannel;
         std::map<int, User*> users;
+		std::string		pass;
+		int				port;
         struct pollfd np;
+		std::map<std::string, bool (Server::*)(int, std::vector<std::string>)> commands;		
+
+		
     public:
         /* setters and getters */
         std::vector<Channel> &getChannel();
@@ -51,8 +56,12 @@ class Server{
                                 std::map<int, bool> &authenticated, std::vector<pollfd> &pfds,
                                 size_t i);
         void                setUser(User &u, int fd);
+		void				command_map(void);
+
+		bool				nick(int fd, std::vector<std::string>);
 
         Server() {};
+		Server(std::string port, std::string psw);
         ~Server() {};
         Channel             *findChannel(std::string name);
         User                *getUser(int fd);
