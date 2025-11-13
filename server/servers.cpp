@@ -1,14 +1,14 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   servers.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:30 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/12 16:35:34 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/13 17:12:47 by scarlucc         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
 #include "../library/servers.hpp"
 
@@ -16,6 +16,7 @@ Server::Server(std::string port, std::string psw)
 {
 	this->port = std::atoi(port.c_str());
 	password = psw;
+	
 	command_map();
 	// outbuf;
 	// inbuf;
@@ -181,4 +182,55 @@ User        *Server::getUser(int fd)
     if (it != users.end())
         return (it->second);
     return NULL;
+}
+
+/* void	add_to_pfds(struct pollfd p, Server serv)
+{
+	serv.pfds.push_back(p);
+	std::cout << 
+} */
+
+int Server::set_nonblocking(int fd) {
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags < 0) return -1;
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) return -1;
+    return 0;
+}
+
+int Server::make_server_socket(int port) {
+    int srv = socket(AF_INET, SOCK_STREAM, 0);
+    if (srv < 0) { perror("socket"); return -1; }
+
+    int opt = 1;
+    if (setsockopt(srv, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        perror("setsockopt");
+        close(srv);
+        return -1;
+    }
+
+    struct sockaddr_in addr;
+    std::memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons(port);
+
+    if (bind(srv, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+        perror("bind");
+        close(srv);
+        return -1;
+    }
+
+    if (listen(srv, 16) < 0) {
+        perror("listen");
+        close(srv);
+        return -1;
+    }
+
+    if (set_nonblocking(srv) < 0) {
+        perror("set_nonblocking");
+        close(srv);
+        return -1;
+    }
+
+    return srv;
 }

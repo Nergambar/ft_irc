@@ -6,7 +6,7 @@
 /*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:28 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/12 17:17:51 by scarlucc         ###   ########.fr       */
+/*   Updated: 2025/11/13 17:11:50 by scarlucc         ###   ########.fr       */
 /*                                                                            */
 /******************************************************************************/
 
@@ -34,14 +34,14 @@
 
 class Server{
     private:
-        std::map<int,std::string> inbuf;
-        std::map<int, std::string> outbuf;
-        std::vector<Channel> allChannel;
-        std::map<int, User*> users;
-        std::vector<pollfd> pfds;
-		std::string		password;
-		int				port;
-        struct pollfd np;
+        std::map<int,std::string> 		inbuf;//command o request
+        std::map<int, std::string> 		outbuf;//reply o response
+        std::vector<Channel> 			allChannel;
+        std::map<int, User*> 			users;
+		struct pollfd 					server_fd;
+        std::vector<pollfd> 			pfds;
+		std::string						password;
+		int								port;
 		std::map<std::string, bool (Server::*)(int, std::vector<std::string>)> commands;		
 
 		
@@ -51,6 +51,7 @@ class Server{
         void                setClientName(User &u);
         void                setInbuf(int fd, std::string &buf);
         void                setOutbuf(int fd, std::string &buf);
+		
 
         std::vector<Channel> 	&getChannel();
         std::string         	getInbuf(int fd);
@@ -73,10 +74,15 @@ class Server{
 		bool				nick(int fd, std::vector<std::string>nick);
 		bool				pass(int fd, std::vector<std::string> cmd);
 		bool				user(int fd, std::vector<std::string> cmd);
+		int set_nonblocking(int fd);
+		int make_server_socket(int port);
 		
         Server() {};
 		Server(std::string port, std::string psw);
         ~Server() {};
+
+		void run();
+		
         Channel             *findChannel(std::string name);
         User                *getUser(int fd);
         
@@ -84,9 +90,8 @@ class Server{
                 int i);
         void closeClient(std::map<int, std::string> &client_name, int fd, std::vector<pollfd> &pfds,
             short rev, int i);
-        bool recvLoop(int fd, std::map<int, std::string> &client_name, int i);
+        bool recvLoop(int fd, std::map<int, std::string> &client_name, int i, std::vector<struct pollfd> &pfds);
         bool    handle_command(int fd, const std::vector<std::string> &line);
 };
-
 
 #endif

@@ -25,7 +25,7 @@
  * 
 */
 
-int set_nonblocking(int fd) {
+/* int set_nonblocking(int fd) {
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags < 0) return -1;
     if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) return -1;
@@ -69,7 +69,7 @@ int make_server_socket(int port) {
     }
 
     return srv;
-}
+} */
 
 // --- Main Server Logic ---
 
@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
     if (server_fd < 0) return 1;
     
     std::string password = argv[2];
-    Server serv(argv[1], argv[2]);
+    Server serv(argv[1], argv[2]);//creazione oggetto server
     
     std::cout << "Chat Server listening on port " << port << std::endl;
     
@@ -93,12 +93,8 @@ int main(int argc, char **argv) {
     p.fd = server_fd;
     p.events = POLLIN; // Wait for new connections
     p.revents = 0;
-    pfds.push_back(p);
+    pfds.push_back(p); //pfds e' private, quindi non funziona.
 
-    // Buffers for each client (in and out)
-    // std::map<int, std::string> serv.inbuf;
-    // std::map<int, std::string> serv.outbuf;
-    
     std::map<int, std::string> client_name; // Simple map to store client 'name' (fd in this case)
 
     std::map<int, bool> authenticated;
@@ -133,11 +129,11 @@ int main(int argc, char **argv) {
             }
 
             // Add to pfds vector
-            struct pollfd np;
-            np.fd = client_fd;
-            np.events = POLLIN; // Initially interested in reading
-            np.revents = 0;
-            pfds.push_back(np);
+            struct pollfd server_fd;
+            server_fd.fd = client_fd;
+            server_fd.events = POLLIN; // Initially interested in reading
+            server_fd.revents = 0;
+            pfds.push_back(server_fd);
 
             // Allocate User on the heap so Server can store a valid pointer
             User *u = new User();
@@ -182,7 +178,7 @@ int main(int argc, char **argv) {
             if (rev & POLLIN) {
                 std::string inbuf = serv.getInbuf(fd);
                 std::string outbuf = serv.getOutbuf(fd);
-                if (serv.recvLoop(fd, client_name, i))
+                if (serv.recvLoop(fd, client_name, i, pfds))
                 {
                     // Close client: Cleanup done in the error/hangup block above
                     // The client will be cleaned up in the loop iteration's POLLERR/POLLHUP check 

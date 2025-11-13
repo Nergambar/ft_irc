@@ -6,7 +6,7 @@
 /*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/29 11:52:49 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/12 17:18:45 by scarlucc         ###   ########.fr       */
+/*   Updated: 2025/11/13 17:38:51 by scarlucc         ###   ########.fr       */
 /*                                                                            */
 /******************************************************************************/
 
@@ -23,11 +23,16 @@ void Server::setClientName(User &u)
     users[fd] = &u;
 }
 
-bool Server::recvLoop(int fd, std::map<int, std::string> &client_name, int i)
+bool Server::recvLoop(int fd, std::map<int, std::string> &client_name, int i, std::vector<struct pollfd> &pfds)//aggiunto temporaneamente parametro pfds
 {
     bool closed = false;
     char buf[4096];
     ssize_t n = recv(fd, buf, sizeof(buf), 0);
+
+	//debugging per segfault
+	std::cout << "DEBUG: pfds.size()=" << pfds.size()
+          << " i=" << i
+          << " fd=" << fd << std::endl;
 
     if (n > 0)
     {
@@ -56,32 +61,12 @@ bool Server::recvLoop(int fd, std::map<int, std::string> &client_name, int i)
 			std::vector<std::string> line = split2(inbuf[fd], ' ', inbuf[fd].find(':'));
             inbuf[fd].erase(0, pos + 1);
 
-            // Trim trailing CR/LF safely
-			// std::string lastLine = line[line.size() - 1];
-            // while (!line.empty() && ((lastLine.end() - 1) == '\n' || (lastLine.end() - 1) == '\r'))
-            // {
-            //     line.resize(line.size() -1);
-            // }
-
             if (line.empty())
                 //continue;
 				return closed;
             if (line[0] == "CAP")
                 //continue;
 				return closed;
-
-            // === Authentication & nickname logic ===
-            /* if (!authenticated[fd]) //gestito in pass()
-            {
-                pass(fd, line);
-                pfds[i].events |= POLLOUT;
-            } 
-            else if (authenticated[fd])
-            {*/
-                // Unified command handling: let handle_command deal with NICK/PASS/JOIN/etc.
-                /* if (!serv.handle_command(fd, line, client_name, password, pfds))
-                { */
-                    // Not a recognized command -> broadcast message
                     std::string msg = "[" + client_name[fd] + "]: " + inbuf[fd] + "\r\n";
                     for (size_t k = 1; k < pfds.size(); ++k)
                     {
@@ -91,40 +76,9 @@ bool Server::recvLoop(int fd, std::map<int, std::string> &client_name, int i)
                             pfds[k].events |= POLLOUT;
                         }
                     }
-                    outbuf[fd].append("You said: " + inbuf[fd] + "\r\n");
-                //}
-                pfds[i].events |= POLLOUT;
-            //}
-            /* else if (authenticated[fd] && serv.getUser(fd)->getUsername().empty())
-            {
-                if (line.empty())
-                { if (pfds.size() > 0 && (pfds[0].revents & POLLIN)) {
-			struct sockaddr_in cli_addr;
-			socklen_t cli_len = sizeof(cli_addr);
-			int client_fd = accept(server_fd, (struct sockaddr*)&cli_addr, &cli_len);
-			if (client_fd < 0) {
-				perror("accept");
-			}
-
-			if (set_nonblocking(client_fd) < 0) {
-				perror("set_nonblocking(client)");
-				close(client_fd);
-				continue;
-			}
-
-			// Add to pfds vector
-			struct pollfd np;
-			np.fd = client_fd;
-			User u;
-                    outbuf[fd].append("User cannot be empty. Please choose your nickname:\r\n");
-                }
-                else
-                    checkUser(serv, line, fd, outbuf, pfds);
-                pfds[i].events |= POLLOUT;
-            } 
-            else*/
-            {
-                // Handle commands
+                    outbuf[fd].append("You said: " + inbuf[fd] + "\r\n");//controlla se stampa
+                pfds[i].events |= POLLOUT;//segmentation fault
+            
                 if (!handle_command(fd, line))
                 {
                     // Broadcast message
@@ -148,7 +102,8 @@ bool Server::recvLoop(int fd, std::map<int, std::string> &client_name, int i)
                     // Command handled, make sure POLLOUT is set
                     pfds[i].events |= POLLOUT;
                 }
-            }
+				inbuf[fd].clear();//svuotare inbuf dopo aver gestito una riga
+            //}
         }
     }
     else if (n == 0)
