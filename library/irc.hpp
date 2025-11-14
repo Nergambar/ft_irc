@@ -1,14 +1,14 @@
-/******************************************************************************/
+/* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   irc.hpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
+/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:41 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/12 16:53:12 by scarlucc         ###   ########.fr       */
+/*   Updated: 2025/11/14 14:53:19 by negambar         ###   ########.fr       */
 /*                                                                            */
-/******************************************************************************/
+/* ************************************************************************** */
 
 #ifndef IRC_HPP
 #define IRC_HPP
@@ -34,7 +34,7 @@
 #include "servers.hpp"
 
 
-int     create_serv_pocket(int port);
+int     create_serv_pocket(int _port);
 int     addNickname(std::map<int,std::string>&cp, const std::string &n);
 int     addWithKey(std::map<int, std::string>&copy, int key, const std::string &n);
 

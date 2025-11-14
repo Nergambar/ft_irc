@@ -1,48 +1,55 @@
-/******************************************************************************/
+/* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   servers.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
+/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 09:56:28 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/13 17:11:50 by scarlucc         ###   ########.fr       */
+/*   Updated: 2025/11/14 15:30:28 by negambar         ###   ########.fr       */
 /*                                                                            */
-/******************************************************************************/
+/* ************************************************************************** */
 
 #ifndef SERVERS
 #define SERVERS
 
-#include <iostream>
-#include <map>
-#include <string>
+
 #include <cstdio> 		//perror
 #include <cstdlib>      // atoi
-#include <cstring>      // memset
-#include <unistd.h>     // close
-#include <sys/socket.h> // socket, bind, listen, accept
-#include <netinet/in.h> // sockaddr_in
-#include <fcntl.h>      // fcntl
-#include <vector>       // vector
-#include <algorithm>    // vector find
-#include <sstream>      //stringstream
 #include <limits.h>     //INT_MAX e INT_MIN
-#include <poll.h>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <map>
+#include <algorithm>
+#include <cstring>
+#include <cerrno>
+#include <stdio.h>
+#include <sstream>
+#include <cctype>
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+#include <unistd.h>
+#include <fcntl.h>
+#include <poll.h>
 #include "channels.hpp"
 #include "users.hpp"
 
 class Server{
     private:
-        std::map<int,std::string> 		inbuf;//command o request
-        std::map<int, std::string> 		outbuf;//reply o response
-        std::vector<Channel> 			allChannel;
-        std::map<int, User*> 			users;
-		struct pollfd 					server_fd;
-        std::vector<pollfd> 			pfds;
-		std::string						password;
-		int								port;
-		std::map<std::string, bool (Server::*)(int, std::vector<std::string>)> commands;		
+        std::map<int,std::string> 		_inbuf;//command o request
+        std::map<int, std::string> 		_outbuf;//reply o response
+        std::vector<Channel> 			_allChannel;
+        std::map<int, User*> 			_users;
+		struct pollfd 					_server_fd;
+        std::vector<pollfd> 			_pfds;
+		std::string						_password;
+		int								_port;
+		std::map<std::string, bool (Server::*)(int, std::vector<std::string>)> _commands;		
 
 		
     public:
@@ -54,43 +61,47 @@ class Server{
 		
 
         std::vector<Channel> 	&getChannel();
-        std::string         	getInbuf(int fd);
-        std::string         	getOutbuf(int fd);
-        std::vector<pollfd>     getPfds() {return (pfds);};
-		pollfd* 				getPollfd(int fd) {
-		    for (size_t i = 0; i < pfds.size(); ++i) {
-		        if (pfds[i].fd == fd)
-		            return &pfds[i];
+        std::string&         	getInbuf(int fd);
+        std::string&        	getOutbuf(int fd);
+        std::vector<pollfd>     getPfds() {return (_pfds);};// returns the vector
+		pollfd* 				getPollfd(int fd) // returns specific pollfd
+        {
+		    for (size_t i = 0; i < _pfds.size(); ++i) {
+		        if (_pfds[i].fd == fd)
+		            return &_pfds[i];
 		    }
 		    return NULL;
 		}
 		
 
-        void                clientCleanUp(int fd, std::map<int, std::string> &client_names, 
-                                std::map<int, bool> &authenticated, std::vector<pollfd> &pfds,
-                                size_t i);
+        void                clientCleanUp(int fd, size_t i)
+        {
+            std::map<int, User*>::iterator it = _users.find(fd);
+            if (it != _users.end())
+                delete it->second; // serve a eliminare la classe puntata (valore della mappa)
+            _users.erase(it); // serve a eliminare l'indice della mappa (anche chiamato key)
+            _pfds.erase(_pfds.begin() + i);
+        };
 		void				command_map(void);
 
 		bool				nick(int fd, std::vector<std::string>nick);
 		bool				pass(int fd, std::vector<std::string> cmd);
 		bool				user(int fd, std::vector<std::string> cmd);
-		int set_nonblocking(int fd);
-		int make_server_socket(int port);
+		int                 set_nonblocking(int fd);
+		int                 make_server_socket(int _port);
 		
         Server() {};
 		Server(std::string port, std::string psw);
-        ~Server() {};
+        ~Server() {for (size_t i = 0; i < _pfds.size(); ++i) close(_pfds[i].fd);};
 
 		void run();
 		
         Channel             *findChannel(std::string name);
         User                *getUser(int fd);
         
-        void    readyForWrite(std::map<int, std::string> &client_name, int fd, std::vector<pollfd> &pfds,
-                int i);
-        void closeClient(std::map<int, std::string> &client_name, int fd, std::vector<pollfd> &pfds,
-            short rev, int i);
-        bool recvLoop(int fd, std::map<int, std::string> &client_name, int i, std::vector<struct pollfd> &pfds);
+        void    readyForWrite(int fd, int i);
+        void closeClient(int fd, short rev, int i);
+        bool recvLoop(int fd, int i);
         bool    handle_command(int fd, const std::vector<std::string> &line);
 };
 

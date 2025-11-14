@@ -1,14 +1,14 @@
-/******************************************************************************/
+/* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   helper1.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: scarlucc <scarlucc@student.42firenze.it    +#+  +:+       +#+        */
+/*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/29 11:52:49 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/13 17:38:51 by scarlucc         ###   ########.fr       */
+/*   Updated: 2025/11/14 15:51:55 by negambar         ###   ########.fr       */
 /*                                                                            */
-/******************************************************************************/
+/* ************************************************************************** */
 
 #include "../library/servers.hpp"
 #include "../library/irc.hpp"
@@ -20,101 +20,89 @@ void Server::setClientName(User &u)
     std::ostringstream name_os;
     name_os << "user" << fd;
     u.setNickname(name_os.str());
-    users[fd] = &u;
+    _users[fd] = &u;
 }
 
-bool Server::recvLoop(int fd, std::map<int, std::string> &client_name, int i, std::vector<struct pollfd> &pfds)//aggiunto temporaneamente parametro pfds
+bool Server::recvLoop(int fd, int i)
 {
     bool closed = false;
     char buf[4096];
     ssize_t n = recv(fd, buf, sizeof(buf), 0);
 
-	//debugging per segfault
-	std::cout << "DEBUG: pfds.size()=" << pfds.size()
-          << " i=" << i
-          << " fd=" << fd << std::endl;
+    // Debugging (optional, but good practice)
+    std::cout << "DEBUG: pfds.size()=" << _pfds.size()
+              << " i=" << i
+              << " fd=" << fd << std::endl;
 
     if (n > 0)
     {
         std::string received(buf, n);
-        // Detect if only CR/LF characters were received
-        bool crlf_only = false;
-		if (received == "\r\n")
-			crlf_only = true;
-        bool sent_crlf = false;
-		if (inbuf[fd] == "\r\n")
-			sent_crlf = true;
-
-        // Skip pure CR/LF unless there's existing partial data
-        if (!sent_crlf && crlf_only)
-            return false;
-
-		if (!(received.find("\r") == received.size() - 2 && received.find("\n") == received.size() - 1))
-			received.append("\r\n");
-        std::cout << "[RECV fd=" << fd << "] " << received << std::endl;
-        inbuf[fd].append(received);
+        
+        // **CRITICAL CHANGE:** REMOVE the line that adds "\r\n" if not present.
+        // It should be the client's responsibility to send a well-formed IRC command.
+        // if (!(received.find("\r") == received.size() - 2 && received.find("\n") == received.size() - 1))
+        //     received.append("\r\n");
+        
+        // Append raw received data to the input buffer
+        _inbuf[fd].append(received);
 
         size_t pos;
-        if ((pos = inbuf[fd].find('\n')) != std::string::npos)//finche' a capo esiste nella stringa
+        // **CRITICAL CHANGE:** Use a while loop to process all complete lines received in one recv call
+        while ((pos = _inbuf[fd].find('\n')) != std::string::npos)
         {
-            //std::string line = inbuf[fd].substr(0, pos + 1);
-			std::vector<std::string> line = split2(inbuf[fd], ' ', inbuf[fd].find(':'));
-            inbuf[fd].erase(0, pos + 1);
+            // Extract the full line (including the terminator)
+            std::string full_line = _inbuf[fd].substr(0, pos + 1);
 
-            if (line.empty())
-                //continue;
-				return closed;
-            if (line[0] == "CAP")
-                //continue;
-				return closed;
-                    std::string msg = "[" + client_name[fd] + "]: " + inbuf[fd] + "\r\n";
-                    for (size_t k = 1; k < pfds.size(); ++k)
-                    {
-                        if (pfds[k].fd != fd)
-                        {
-                            outbuf[pfds[k].fd].append(msg);
-                            pfds[k].events |= POLLOUT;
-                        }
-                    }
-                    outbuf[fd].append("You said: " + inbuf[fd] + "\r\n");//controlla se stampa
-                pfds[i].events |= POLLOUT;//segmentation fault
+            // 1. Parse the command line into tokens
+            // The split function should handle parsing the extracted line, not the entire _inbuf.
+            // Assuming split2 is designed to use the first argument as the string to split:
+            // NOTE: You used _inbuf[fd].find(':') which is dangerous if the line doesn't contain ':'.
+            // For now, let's assume split2 works correctly on the command and arguments.
+            std::vector<std::string> cmd_tokens = split2(full_line, ' ', full_line.find(':')); 
+
+            // 2. Remove the processed line from the input buffer
+            _inbuf[fd].erase(0, pos + 1);
             
-                if (!handle_command(fd, line))
-                {
-                    // Broadcast message
-                    std::string msg = "[" + client_name[fd] + "]: " + inbuf[fd] + "\r\n";
+            // 3. Handle empty lines or CAP commands immediately
+            if (cmd_tokens.empty() || cmd_tokens[0] == "CAP")
+                continue; // Process the next line if available
 
-                    for (size_t k = 1; k < pfds.size(); ++k)
-                    {
-                        if (pfds[k].fd != fd)
-                        {
-                            outbuf[pfds[k].fd].append(msg);
-                            pfds[k].events |= POLLOUT;
-                        }
-                    }
+            // 4. Execute the command
+            // We use a temporary string of the command arguments for the echo back.
+            // This is safer than trying to rebuild the message from cmd_tokens later.
+            std::string cmd_args = full_line.substr(cmd_tokens[0].length());
+            cmd_args.erase(cmd_args.find_last_not_of(" \r\n") + 1); // Trim trailing whitespace/CRLF
 
-                    // Echo to sender
-                    outbuf[fd].append("You said: " + inbuf[fd] + "\r\n");
-                    pfds[i].events |= POLLOUT;
-                }
-                else
-                {
-                    // Command handled, make sure POLLOUT is set
-                    pfds[i].events |= POLLOUT;
-                }
-				inbuf[fd].clear();//svuotare inbuf dopo aver gestito una riga
-            //}
+            if (!handle_command(fd, cmd_tokens))
+            {
+                // Command failed (e.g., PASS failed) or was unknown.
+                // The error message (e.g., "Incorrect password...") is already set in _outbuf[fd] 
+                // inside handle_command or Server::pass, so we only need to echo the input.
+                
+                // Echo only the client's input (the command/line they sent)
+                _outbuf[fd].append("You said: " + cmd_args + "\r\n");
+            }
+            // else: Command succeeded. Output (if any) was handled by the command's specific function.
+            
+            // In either case, ensure the POLLOUT flag is set to send any queued output
+            _pfds[i].events |= POLLOUT;
+
+            // **CRITICAL CHANGE:** REMOVE all the chat message broadcasting logic 
+            // inside this function. That logic belongs in a separate command (like PRIVMSG) 
+            // or in a dedicated "handle_message" block if the input is not a command.
         }
     }
     else if (n == 0)
     {
-        //togliere fd da vettore di pollfd per evitare ciclo infinito
-		//al momento non gestiamo disconnessione
-		std::cout << "Client " << client_name[fd] << " fd=" << fd << " disconnected (recv==0)\n";
+        // Client disconnected gracefully
+        std::map<int, User*>::iterator it = _users.find(fd);
+        std::string fdit = (it != _users.end() && it->second) ? it->second->getNickname() : "Unknown";
+		std::cout << "Client " << fdit << " fd=" << fd << " disconnected (recv==0)\n";
         closed = true;
     }
     else
     {
+        // Recv error
         std::cerr << "recv error\n";
         closed = true;
     }
@@ -124,9 +112,10 @@ bool Server::recvLoop(int fd, std::map<int, std::string> &client_name, int i, st
 
 bool Server::handle_command(int fd, const std::vector<std::string> &line)
 {
-	if (commands.find(line[0]) != commands.end())
+	if (_commands.find(line[0]) != _commands.end())
 	{
-		return (this->*(commands[line[0]]))(fd, line);
+        std::cout << "ENTRA" << std::endl;
+		return (this->*(_commands[line[0]]))(fd, line);
 	}
 	else
 	{

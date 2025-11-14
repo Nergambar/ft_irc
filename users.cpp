@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 10:28:17 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/03 17:39:15 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/14 14:06:33 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,20 +14,14 @@
 
 User::User() : username(""), nickname(""), hostName(""), isOperator(false), fd(-1), channelPerm(), messages(), maxChannel(9)
 {
-    // setServ(serv);
-    messages.reserve(maxChannel);
 }
 
 User::User(int fd) : username(""), nickname(""), hostName(""), isOperator(false), fd(fd), channelPerm(), messages(), maxChannel(9)
 {
-    // setServ(serv);
-    messages.reserve(maxChannel);
+    authenticated = false;
 }
 
-int    User::getFd()
-{
-    return fd;
-}
+int    User::getFd(){return fd;}
 
 bool    User::isOper(std::string channel)
 {

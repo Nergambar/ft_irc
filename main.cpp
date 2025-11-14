@@ -24,81 +24,31 @@
  * fcntl(fd, F_SETFL, flags | O_NONBLOCK) aggiunge O_NONBLOCK ai flag presenti
  * 
 */
-
-/* int set_nonblocking(int fd) {
-    int flags = fcntl(fd, F_GETFL, 0);
-    if (flags < 0) return -1;
-    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) return -1;
-    return 0;
-}
-
-
-int make_server_socket(int port) {
-    int srv = socket(AF_INET, SOCK_STREAM, 0);
-    if (srv < 0) { perror("socket"); return -1; }
-
-    int opt = 1;
-    if (setsockopt(srv, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-        perror("setsockopt");
-        close(srv);
-        return -1;
-    }
-
-    struct sockaddr_in addr;
-    std::memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(port);
-
-    if (bind(srv, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-        perror("bind");
-        close(srv);
-        return -1;
-    }
-
-    if (listen(srv, 16) < 0) {
-        perror("listen");
-        close(srv);
-        return -1;
-    }
-
-    if (set_nonblocking(srv) < 0) {
-        perror("set_nonblocking");
-        close(srv);
-        return -1;
-    }
-
-    return srv;
-} */
-
-// --- Main Server Logic ---
-
 int main(int argc, char **argv) {
     if (argc != 3) {
         std::cerr << "Usage: ./ircserv <port> [password]\n";
         return 1;
     }
-    int port = std::atoi(argv[1]);
-    int server_fd = make_server_socket(port);
-    if (server_fd < 0) return 1;
-    
-    std::string password = argv[2];
+    //mettere dentro try and catch
     Server serv(argv[1], argv[2]);//creazione oggetto server
+    serv.run();
     
-    std::cout << "Chat Server listening on port " << port << std::endl;
+    //int port = std::atoi(argv[1]);
+    //std::cout << "Chat Server listening on port " << port << std::endl;
+    //int server_fd = serv.make_server_socket(port);
+    //if (server_fd < 0) return 1;
+    
+    //std::string password = argv[2];
     
     // Vector of pollfd: index 0 -> server_fd, the others -> clients
-    std::vector<struct pollfd> pfds = serv.getPfds();//forse causa loop infinito e' mancata cancellazione
+    /* std::vector<struct pollfd> pfds = serv.getPfds();//forse la causa del loop infinito e' mancata cancellazione
     struct pollfd p;
     p.fd = server_fd;
     p.events = POLLIN; // Wait for new connections
     p.revents = 0;
-    pfds.push_back(p); //pfds e' private, quindi non funziona.
-
-    std::map<int, std::string> client_name; // Simple map to store client 'name' (fd in this case)
-
-    std::map<int, bool> authenticated;
-    while (true) {
+    pfds.push_back(p); //pfds e' private, quindi non funziona. */
+    
+    /* while (true) {
         int timeout = -1; // Wait indefinitely
         int rv = poll(&pfds[0], pfds.size(), timeout);
         if (rv < 0) {
@@ -122,7 +72,7 @@ int main(int argc, char **argv) {
                 break;
             }
 
-            if (set_nonblocking(client_fd) < 0) {
+            if (serv.set_nonblocking(client_fd) < 0) {
                 perror("set_nonblocking(client)");
                 close(client_fd);
                 continue;
@@ -215,9 +165,10 @@ int main(int argc, char **argv) {
             // Clean up revents for the next iteration
             if (pfds.size() > i) pfds[i].revents = 0;
         } // end for clients
-    } // end while
+    } // end while */
+    
     // Clean shutdown
     serv.~Server();
-    for (size_t i = 0; i < pfds.size(); ++i) close(pfds[i].fd);
+    //for (size_t i = 0; i < pfds.size(); ++i) close(pfds[i].fd); //spostato in ~Server
     return 0;
 }

@@ -6,7 +6,7 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/04 09:49:12 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/04 09:52:01 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/14 14:51:04 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,7 @@ class Channel{
         std::string name;
         std::string topic;
         int         maxUsers;
-        std::string password;
+        std::string _password;
         public:
         Channel();
         Channel(const std::string &n);

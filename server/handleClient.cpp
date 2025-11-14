@@ -6,40 +6,46 @@
 /*   By: negambar <negambar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 12:09:18 by negambar          #+#    #+#             */
-/*   Updated: 2025/11/12 13:59:36 by negambar         ###   ########.fr       */
+/*   Updated: 2025/11/14 14:48:43 by negambar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../library/irc.hpp"
 
-void Server::closeClient(std::map<int, std::string> &client_name, int fd, std::vector<pollfd> &pfds,
-        short rev, int i)
+void Server::closeClient(int fd,short rev, int i)
 {
-    std::cout << "Client " << client_name[fd] << " fd=" << fd << " closed or error (revents=" << rev << ")\n";
+    std::string name;
+    std::map<int, User*>::iterator it = _users.begin();
+    for (; it != _users.end(); ++it)
+    {
+        if (it->first == fd)
+        {
+            name = it->second->getNickname();
+            break;
+        }
+    }
+    std::cout << "Client " << name << " fd=" << fd << " closed or error (revents=" << rev << ")\n";
                 
-                // Broadcast disconnection message
-                std::string disconn_msg = client_name[fd] + " left the chat.\r\n";
-                for (size_t k = 1; k < pfds.size(); ++k) {
-                    if (pfds[k].fd != fd) {
-                        setOutbuf(pfds[k].fd, disconn_msg);
-                        pfds[k].events |= POLLOUT;
-                    }
-                }
+    // Broadcast disconnection message
+    std::string disconn_msg = name + " left the chat.\r\n";
+    for (size_t k = 1; k < _pfds.size(); ++k) {
+        if (_pfds[k].fd != fd) {
+            setOutbuf(_pfds[k].fd, disconn_msg);
+            _pfds[k].events |= POLLOUT;
+        }
+    }
 
-                close(fd);
-                inbuf.erase(fd);
-                outbuf.erase(fd);
-                client_name.erase(fd);
-                pfds.erase(pfds.begin() + i);
-                --i;
+    close(fd);
+    _inbuf.erase(fd);
+    _outbuf.erase(fd);
+    clientCleanUp(fd, i);
 }
 
 
 
-void    Server::readyForWrite(std::map<int, std::string> &client_name, int fd, std::vector<pollfd> &pfds,
-        int i)
+void    Server::readyForWrite(int fd, int i)
 {
-    std::string buf = getOutbuf(fd);
+    std::string buf = _outbuf[fd];
     while (!buf.empty()) {
         ssize_t n = send(fd, buf.c_str(), buf.size(), 0);
         if (n > 0) {
@@ -50,19 +56,15 @@ void    Server::readyForWrite(std::map<int, std::string> &client_name, int fd, s
             } else {
                 perror("send");
                 // Close client on error
-                std::string disconn_msg = client_name[fd] + " left the chat.\r\n";
-                for (size_t k = 1; k < pfds.size(); ++k) {
-                    if (pfds[k].fd != fd) {
-                        setOutbuf(pfds[k].fd, disconn_msg);
-                        pfds[k].events |= POLLOUT;
+                std::map<int, User*>::iterator it = _users.find(fd);
+                std::string disconn_msg = it->second->getNickname() + " left the chat.\r\n";
+                for (size_t k = 1; k < _pfds.size(); ++k) {
+                    if (_pfds[k].fd != fd) {
+                        setOutbuf(_pfds[k].fd, disconn_msg);
+                        _pfds[k].events |= POLLOUT;
                     }
                 }
-                close(fd);
-                inbuf.erase(fd);
-                outbuf.erase(fd);
-                client_name.erase(fd);
-                pfds.erase(pfds.begin() + i);
-                --i;
+                clientCleanUp(fd, i);
                 break;
             }
         }

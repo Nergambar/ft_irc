@@ -5,7 +5,7 @@ CXXFLAGS =  -Wall -Wextra -Werror -std=c++98 -Iincludes -g
 
 SRC 	= server/servers.cpp server/helper1.cpp server/handleClient.cpp \
 			parsing/parsing1.cpp \
-			commands.cpp recvLoop.cpp  handleCommands.cpp  channel.cpp \
+			commands.cpp passUser.cpp  handleCommands.cpp  channel.cpp \
 			main.cpp users.cpp operators.cpp
 OBJ 	= $(SRC:.cpp=.o)
 
